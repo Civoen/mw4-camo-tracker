@@ -1,3 +1,63 @@
+// ---- Shared progress helpers ----
+function loadCamoProgress(){
+  try{
+    const raw = localStorage.getItem('mw4camo-progress');
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){
+    return {};
+  }
+}
+
+function saveCamoProgress(progress){
+  try{ localStorage.setItem('mw4camo-progress', JSON.stringify(progress)); }catch(e){}
+}
+
+// A weapon counts as "mastered" once every tier in CAMO_TIERS is checked.
+// Tiers are data-driven (see data.js), so this keeps working unchanged if
+// the tier list changes size when MW4's real camo system is announced.
+function isWeaponMastered(name, progress){
+  const p = progress[name] || {};
+  return CAMO_TIERS.every(t => p[t.key]);
+}
+
+// True once every weapon in `cls` has tier `tierKey` checked. Mastery camo
+// tiers beyond Gold are gated at the class level (e.g. no weapon can start
+// Platinum until every weapon in its class has Gold) rather than per-weapon.
+function classTierComplete(cls, tierKey, progress){
+  const weapons = WEAPONS.filter(w => w.class === cls);
+  return weapons.length > 0 && weapons.every(w => (progress[w.name] || {})[tierKey]);
+}
+
+// Whether a given tier is unlocked for a specific weapon right now.
+function tierUnlocked(weapon, tierIndex, progress){
+  if(tierIndex === 0) return true; // Gold has no prerequisite
+  const prevTier = CAMO_TIERS[tierIndex - 1];
+  return classTierComplete(weapon.class, prevTier.key, progress);
+}
+
+function nextTierLabel(name){
+  const progress = loadCamoProgress();
+  const p = progress[name] || {};
+  const next = CAMO_TIERS.find(t => !p[t.key]);
+  return next ? 'Next: ' + next.label : 'All tiers complete';
+}
+
+// Checks the next available tier for a weapon (used by the "Next Camo"
+// button in the Grind List). No-ops if the tier is locked or already maxed.
+function advanceNextTier(name){
+  const weapon = weaponLookup(name);
+  const progress = loadCamoProgress();
+  const p = progress[name] || {};
+  const nextIndex = CAMO_TIERS.findIndex(t => !p[t.key]);
+  if(nextIndex === -1) return; // already fully mastered
+  if(!tierUnlocked(weapon, nextIndex, progress)) return; // gated, can't skip ahead
+  if(!progress[name]) progress[name] = {};
+  progress[name][CAMO_TIERS[nextIndex].key] = true;
+  saveCamoProgress(progress);
+  renderGrindList();
+  document.dispatchEvent(new CustomEvent('grindlist:changed'));
+}
+
 // ---- Grind List (pinned weapons currently being worked on) ----
 const GRIND_LIST_KEY = 'mw4camo-grindlist';
 
@@ -18,6 +78,7 @@ let grindList = loadGrindList();
 
 const grindListEl = document.getElementById('grindList');
 const grindListToggle = document.getElementById('grindListToggle');
+const grindListFullscreen = document.getElementById('grindListFullscreen');
 const grindListPanel = document.getElementById('grindListPanel');
 const grindListCount = document.getElementById('grindListCount');
 
@@ -25,15 +86,26 @@ function weaponLookup(name){
   return WEAPONS.find(w => w.name === name) || { name: name, class: '' };
 }
 
-function nextTierLabel(name){
-  const progress = loadCamoProgress();
-  const p = progress[name] || {};
-  const next = CAMO_TIERS.find(t => !p[t.key]);
-  return next ? 'Next: ' + next.label : 'All tiers complete';
+// ---- Full Screen mode (identical behavior to Easy Tarkov's "Infil") ----
+// Expands the Grind List panel to fill the available vertical space and
+// scales item text based on how much room each pinned weapon gets.
+function applyFullscreenSizing(){
+  if(!grindListEl.classList.contains('fullscreen')) return;
+  const header = document.querySelector('header');
+  const barHeight = grindListEl.querySelector('.grind-list-bar').getBoundingClientRect().height;
+  const panelHeight = header
+    ? Math.max(200, window.innerHeight - header.getBoundingClientRect().top - barHeight)
+    : Math.max(200, window.innerHeight - barHeight - 40);
+  grindListPanel.style.height = panelHeight + 'px';
+
+  const budget = panelHeight / Math.max(1, grindList.length);
+  grindListEl.classList.remove('fs-lg', 'fs-md', 'fs-sm');
+  grindListEl.classList.add(budget >= 90 ? 'fs-lg' : budget >= 60 ? 'fs-md' : 'fs-sm');
 }
 
 function renderGrindList(){
   if(!grindListEl) return;
+  applyFullscreenSizing();
   grindListCount.textContent = grindList.length;
   grindListPanel.innerHTML = grindList.length
     ? grindList.map(name => {
@@ -41,10 +113,13 @@ function renderGrindList(){
         return '<div class="grind-item" data-name="'+name+'">' +
           '<span><span class="grind-item-name">'+w.name+'</span><br>' +
           '<span class="grind-item-sub">'+w.class+' &middot; '+nextTierLabel(name)+'</span></span>' +
-          '<button class="grind-item-remove" data-name="'+name+'" type="button">Remove</button>' +
+          '<span class="grind-item-actions">' +
+            '<button class="grind-item-next" data-name="'+name+'" type="button">Next Camo</button>' +
+            '<button class="grind-item-remove" data-name="'+name+'" type="button">Remove</button>' +
+          '</span>' +
         '</div>';
       }).join('')
-    : '<div class="grind-list-empty">No weapons pinned. Pin the ones you\'re currently grinding.</div>';
+    : '<div class="grind-list-empty">No weapons pinned. Click any weapon on the Camo Tracker page to pin it here.</div>';
 }
 
 if(grindListEl){
@@ -58,20 +133,44 @@ if(grindListEl){
     grindList = [];
     saveGrindList(grindList);
     renderGrindList();
-    if(typeof updatePinButtons === 'function') updatePinButtons();
+    document.dispatchEvent(new CustomEvent('grindlist:changed'));
   });
+  if(grindListFullscreen){
+    grindListFullscreen.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const active = grindListEl.classList.toggle('fullscreen');
+      if(active){
+        grindListEl.classList.add('open');
+      }else{
+        grindListEl.classList.remove('open', 'fs-lg', 'fs-md', 'fs-sm');
+        grindListPanel.style.height = '';
+      }
+      grindListFullscreen.textContent = active ? 'Exit Full Screen' : 'Full Screen';
+      renderGrindList();
+    });
+  }
   grindListPanel.addEventListener('click', (e) => {
-    const btn = e.target.closest('.grind-item-remove');
-    if(!btn) return;
-    const name = btn.getAttribute('data-name');
-    grindList = grindList.filter(n => n !== name);
-    saveGrindList(grindList);
-    renderGrindList();
-    if(typeof updatePinButtons === 'function') updatePinButtons();
+    const removeBtn = e.target.closest('.grind-item-remove');
+    if(removeBtn){
+      const name = removeBtn.getAttribute('data-name');
+      grindList = grindList.filter(n => n !== name);
+      saveGrindList(grindList);
+      renderGrindList();
+      document.dispatchEvent(new CustomEvent('grindlist:changed'));
+      return;
+    }
+    const nextBtn = e.target.closest('.grind-item-next');
+    if(nextBtn){
+      advanceNextTier(nextBtn.getAttribute('data-name'));
+      return;
+    }
   });
   renderGrindList();
+  window.addEventListener('resize', applyFullscreenSizing);
 }
 
+// Pins/unpins a weapon into the Grind List. Fires an event so any checklist
+// on the page can refresh its own "pinned" indicators without a hard reload.
 function togglePin(name){
   if(grindList.includes(name)){
     grindList = grindList.filter(n => n !== name);
@@ -80,41 +179,7 @@ function togglePin(name){
   }
   saveGrindList(grindList);
   renderGrindList();
-}
-
-function loadCamoProgress(){
-  try{
-    const raw = localStorage.getItem('mw4camo-progress');
-    return raw ? JSON.parse(raw) : {};
-  }catch(e){
-    return {};
-  }
-}
-
-// ---- Search ----
-const searchInput = document.getElementById('taskSearch');
-const searchResults = document.getElementById('searchResults');
-
-function renderResults(query){
-  const q = query.trim().toLowerCase();
-  if(!q){ searchResults.classList.remove('open'); searchResults.innerHTML = ''; return; }
-  const matches = WEAPONS.filter(w => w.name.toLowerCase().includes(q));
-  searchResults.innerHTML = matches.length
-    ? matches.map(w => '<div data-name="'+w.name+'">'+w.name+' <span style="opacity:.6">&middot; '+w.class+'</span></div>').join('')
-    : '<div class="none">No weapons found</div>';
-  searchResults.classList.add('open');
-}
-
-if(searchInput){
-  searchInput.addEventListener('input', (e) => renderResults(e.target.value));
-  searchInput.addEventListener('focus', (e) => renderResults(e.target.value));
-  document.addEventListener('click', (e) => {
-    if(!e.target.closest('.search-wrap')) searchResults.classList.remove('open');
-  });
-  searchResults.addEventListener('click', (e) => {
-    const row = e.target.closest('[data-name]');
-    if(row) window.location.href = 'camos.html?w=' + encodeURIComponent(row.getAttribute('data-name'));
-  });
+  document.dispatchEvent(new CustomEvent('grindlist:changed'));
 }
 
 // ---- Mobile nav menu ----
@@ -149,181 +214,177 @@ if(topbarRightEl){
   mobileMenuWrap.appendChild(mobileMenuPanel);
   topbarRightEl.appendChild(mobileMenuWrap);
 
-  const mobileSearchBtn = document.createElement('button');
-  mobileSearchBtn.type = 'button';
-  mobileSearchBtn.className = 'mobile-search-btn';
-  mobileSearchBtn.setAttribute('aria-label', 'Search weapons');
-  mobileSearchBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
-  mobileSearchBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const wrap = document.querySelector('.search-wrap');
-    if(!wrap) return;
-    const open = wrap.classList.toggle('mobile-search-open');
-    if(open) searchInput.focus();
-  });
-  topbarRightEl.appendChild(mobileSearchBtn);
-
   document.addEventListener('click', (e) => {
     if(!e.target.closest('.mobile-menu-wrap')) mobileMenuPanel.classList.remove('open');
-    const wrap = document.querySelector('.search-wrap');
-    if(wrap && !e.target.closest('.search-wrap') && !e.target.closest('.mobile-search-btn')){
-      wrap.classList.remove('mobile-search-open');
-    }
   });
 }
 
-// ---- Keyboard shortcuts (Space to search, Esc to close panels) ----
+// ---- Keyboard shortcut: Esc closes open panels ----
 document.addEventListener('keydown', (e) => {
-  const tag = document.activeElement.tagName;
-  const isTyping = tag === 'INPUT' || tag === 'TEXTAREA' || document.activeElement.isContentEditable;
-
-  if(e.key === ' ' && !isTyping && searchInput){
-    e.preventDefault();
-    searchInput.focus();
-  }
-
-  if(e.key === 'Escape'){
-    if(grindListEl) grindListEl.classList.remove('open');
-    if(searchResults) searchResults.classList.remove('open');
-    if(isTyping) document.activeElement.blur();
-  }
+  if(e.key === 'Escape' && grindListEl) grindListEl.classList.remove('open');
 });
 
-// ---- Camo checklist renderer (per-weapon, sequential tiers) ----
-// config = { listElId, classFilterId, filterInputId, filterEmptyId }
+// ---- Homepage: weapon class summary tiles ----
+// Renders one tile per class (e.g. "Assault Rifles 2/7") linking into the
+// Camo Tracker pre-filtered to that class, plus an "All Weapons" tile.
+function renderClassSummary(containerId){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  const progress = loadCamoProgress();
+
+  function tile(label, count, total, href){
+    return '<a class="class-tile" href="'+href+'">' +
+      '<div class="class-tile-name">'+label+'</div>' +
+      '<div class="class-tile-count">'+count+'/'+total+'</div>' +
+    '</a>';
+  }
+
+  const allDone = WEAPONS.filter(w => isWeaponMastered(w.name, progress)).length;
+  let html = tile('All Weapons', allDone, WEAPONS.length, 'camos.html');
+
+  WEAPON_CLASSES.forEach(cls => {
+    const weapons = WEAPONS.filter(w => w.class === cls);
+    const done = weapons.filter(w => isWeaponMastered(w.name, progress)).length;
+    html += tile(classLabel(cls), done, weapons.length, 'camos.html?class=' + encodeURIComponent(cls));
+  });
+
+  el.innerHTML = html;
+}
+
+// ---- Camo checklist renderer (per-weapon, sequential/class-gated tiers) ----
+// config = { listElId, classFilterId, filterEmptyId }
 function initCamoChecklist(config){
   const listEl = document.getElementById(config.listElId);
   let progress = loadCamoProgress();
-  let activeClass = 'All';
 
-  function saveProgress(){
-    try{ localStorage.setItem('mw4camo-progress', JSON.stringify(progress)); }catch(e){}
+  const params = new URLSearchParams(window.location.search);
+  const requestedClass = params.get('class');
+  let activeClass = (requestedClass && WEAPON_CLASSES.includes(requestedClass)) ? requestedClass : 'All';
+
+  function scopedWeapons(){
+    return activeClass === 'All' ? WEAPONS : WEAPONS.filter(w => w.class === activeClass);
   }
 
-  function weaponDone(name){
-    const p = progress[name] || {};
-    return CAMO_TIERS.every(t => p[t.key]);
-  }
-
+  // The bar shows one line per tier (Gold at the bottom). Each line's width
+  // is the % of weapons in the current scope that hold that tier. Since
+  // higher tiers are gated behind the whole class finishing the tier below,
+  // "all Gold" is what takes the bottom line to 100%.
   function updateProgressBar(){
-    const total = WEAPONS.length;
-    const done = WEAPONS.filter(w => weaponDone(w.name)).length;
-    const pct = total ? Math.round((done / total) * 100) : 0;
-    document.getElementById('progressText').textContent = done + ' of ' + total + ' weapons mastered';
-    document.getElementById('progressPct').textContent = pct + '%';
-    const fill = document.getElementById('progressFill');
-    fill.style.width = pct + '%';
-    fill.style.background = pct >= 100 ? '#3cbf2d' : '';
-  }
+    const scope = scopedWeapons();
+    const total = scope.length;
+    const track = document.getElementById('progressTrack');
+    const legend = document.getElementById('tierLegend');
 
-  window.updatePinButtons = function(){
-    listEl.querySelectorAll('.weapon-pin').forEach(btn => {
-      const name = btn.getAttribute('data-name');
-      const pinned = grindList.includes(name);
-      btn.textContent = pinned ? '\u2713 Pinned' : '+ Pin';
-      btn.classList.toggle('pinned', pinned);
+    const tierStats = CAMO_TIERS.map(t => {
+      const done = scope.filter(w => (progress[w.name] || {})[t.key]).length;
+      return { tier: t, done: done, pct: total ? Math.round((done / total) * 100) : 0 };
     });
-  };
+
+    if(track){
+      track.innerHTML = tierStats.map(s =>
+        '<div class="tier-fill-row"><div class="tier-fill-row-inner" style="width:'+s.pct+'%;background:'+s.tier.color+'"></div></div>'
+      ).join('');
+    }
+    if(legend){
+      legend.innerHTML = tierStats.map(s =>
+        '<span class="tier-legend-item"><span class="tier-legend-dot" style="background:'+s.tier.color+'"></span>'+s.tier.label+': '+s.done+'/'+total+'</span>'
+      ).join('');
+    }
+
+    const label = activeClass === 'All' ? 'All Weapons' : classLabel(activeClass);
+    const goldPct = tierStats[0] ? tierStats[0].pct : 0;
+    document.getElementById('progressText').textContent = label + ' \u00b7 Gold progress';
+    document.getElementById('progressPct').textContent = goldPct + '%';
+  }
 
   function renderRow(w){
     const p = progress[w.name] || {};
+    const pinned = grindList.includes(w.name);
     const tiersHtml = CAMO_TIERS.map((t, i) => {
-      const prevDone = i === 0 || p[CAMO_TIERS[i - 1].key];
+      const unlocked = tierUnlocked(w, i, progress);
       const done = !!p[t.key];
-      const locked = !prevDone && !done;
+      const locked = !unlocked && !done;
       return '<label class="tier-check'+(done ? ' tier-done' : '')+(locked ? ' tier-locked' : '')+'">' +
         '<input type="checkbox" data-name="'+w.name+'" data-tier="'+t.key+'"'+(done ? ' checked' : '')+(locked ? ' disabled' : '')+'>' +
         t.label +
       '</label>';
     }).join('');
-    return '<div class="weapon-row'+(weaponDone(w.name) ? ' done' : '')+'" data-name="'+w.name+'" data-class="'+w.class+'">' +
+    return '<div class="weapon-row'+(isWeaponMastered(w.name, progress) ? ' done' : '')+(pinned ? ' pinned' : '')+'" data-name="'+w.name+'" data-class="'+w.class+'">' +
       '<div class="weapon-head">' +
         '<span><span class="weapon-name">'+w.name+'</span><br><span class="weapon-class">'+w.class+'</span></span>' +
-        '<button class="weapon-pin" data-name="'+w.name+'" type="button">+ Pin</button>' +
+        (pinned ? '<span class="weapon-pinned-badge">Pinned</span>' : '') +
       '</div>' +
       '<div class="tier-row">'+tiersHtml+'</div>' +
     '</div>';
   }
 
   function render(){
-    listEl.innerHTML = WEAPONS.length
-      ? WEAPONS.map(renderRow).join('')
-      : '<div class="empty-note">No weapons added yet.</div>';
+    const scope = scopedWeapons();
+    listEl.innerHTML = scope.length
+      ? scope.map(renderRow).join('')
+      : '<div class="empty-note">No weapons in this class yet.</div>';
     bindRowEvents();
-    updatePinButtons();
     updateProgressBar();
-    applyFilters();
+    updateFilterEmpty();
   }
 
   function bindRowEvents(){
+    // Tier checkboxes: change progress, don't trigger the row's pin click.
     listEl.querySelectorAll('.tier-check input').forEach(box => {
       box.addEventListener('change', () => {
         const name = box.getAttribute('data-name');
         const tier = box.getAttribute('data-tier');
         if(!progress[name]) progress[name] = {};
         progress[name][tier] = box.checked;
-        // Unchecking a tier also clears any tiers that come after it.
+        // Unchecking a tier also clears any tiers that come after it for
+        // THIS weapon, since tiers are sequential per weapon.
         if(!box.checked){
           const idx = CAMO_TIERS.findIndex(t => t.key === tier);
           CAMO_TIERS.slice(idx + 1).forEach(t => { progress[name][t.key] = false; });
         }
-        saveProgress();
+        saveCamoProgress(progress);
+        renderGrindList(); // keep "Next: X" labels in the Grind List current
         render();
       });
     });
-    listEl.querySelectorAll('.weapon-pin').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        togglePin(btn.getAttribute('data-name'));
-        updatePinButtons();
+    listEl.querySelectorAll('.tier-check').forEach(label => {
+      label.addEventListener('click', (e) => e.stopPropagation());
+    });
+
+    // Clicking anywhere else on a weapon's box pins/unpins it.
+    listEl.querySelectorAll('.weapon-row').forEach(row => {
+      row.addEventListener('click', () => {
+        togglePin(row.getAttribute('data-name'));
+        render();
       });
     });
   }
 
-  const filterInput = config.filterInputId ? document.getElementById(config.filterInputId) : null;
-  const filterEmpty = config.filterEmptyId ? document.getElementById(config.filterEmptyId) : null;
-  const classFilterEl = config.classFilterId ? document.getElementById(config.classFilterId) : null;
-
-  function applyFilters(){
-    const q = filterInput ? filterInput.value.trim().toLowerCase() : '';
-    let visibleCount = 0;
-    listEl.querySelectorAll('.weapon-row').forEach(row => {
-      const name = row.getAttribute('data-name').toLowerCase();
-      const cls = row.getAttribute('data-class');
-      const matchesSearch = name.includes(q);
-      const matchesClass = activeClass === 'All' || cls === activeClass;
-      const visible = matchesSearch && matchesClass;
-      row.style.display = visible ? '' : 'none';
-      if(visible) visibleCount++;
-    });
-    if(filterEmpty) filterEmpty.style.display = visibleCount === 0 ? 'block' : 'none';
+  function updateFilterEmpty(){
+    const filterEmpty = config.filterEmptyId ? document.getElementById(config.filterEmptyId) : null;
+    if(filterEmpty) filterEmpty.style.display = scopedWeapons().length === 0 ? 'block' : 'none';
   }
 
-  if(filterInput) filterInput.addEventListener('input', applyFilters);
-
+  const classFilterEl = config.classFilterId ? document.getElementById(config.classFilterId) : null;
   if(classFilterEl){
     classFilterEl.innerHTML = ['All', ...WEAPON_CLASSES].map(c =>
-      '<button class="class-filter-btn'+(c === 'All' ? ' active' : '')+'" data-class="'+c+'" type="button">'+c+'</button>'
+      '<button class="class-filter-btn'+(c === activeClass ? ' active' : '')+'" data-class="'+c+'" type="button">'+(c === 'All' ? 'All' : classLabel(c))+'</button>'
     ).join('');
     classFilterEl.addEventListener('click', (e) => {
       const btn = e.target.closest('.class-filter-btn');
       if(!btn) return;
       activeClass = btn.getAttribute('data-class');
       classFilterEl.querySelectorAll('.class-filter-btn').forEach(b => b.classList.toggle('active', b === btn));
-      applyFilters();
+      render();
     });
   }
 
-  render();
+  // If progress changes elsewhere (e.g. a Next Camo click, or the Grind
+  // List gets cleared), reflect it here without requiring a page reload.
+  document.addEventListener('grindlist:changed', () => {
+    progress = loadCamoProgress();
+    render();
+  });
 
-  // Deep-link support: camos.html?w=WeaponName scrolls to and highlights a weapon
-  const params = new URLSearchParams(window.location.search);
-  const target = params.get('w');
-  if(target){
-    const row = listEl.querySelector('.weapon-row[data-name="'+CSS.escape(target)+'"]');
-    if(row){
-      row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      row.style.borderColor = 'var(--amber)';
-    }
-  }
+  render();
 }

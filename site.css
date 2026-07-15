@@ -6,12 +6,12 @@
 @font-face{font-family:'IBM Plex Mono';src:url('fonts/ibm-plex-mono-600.woff2') format('woff2');font-weight:600;font-display:optional;}
 
 :root{
-  --bg:#14171a;
+  --bg:#121212;
   --panel:#1b1f1c;
   --panel-2:#20241f;
   --olive:#4a5240;
   --olive-light:#6b7358;
-  --rust:#c1502e;
+  --rust:#fdd100;
   --amber:#c9a227;
   --paper:#d8d2c4;
   --paper-dim:#9a9689;
@@ -74,43 +74,6 @@ body{
 }
 .trader-btn:hover{border-color:var(--rust);}
 a.trader-btn{display:inline-block;text-decoration:none;}
-.search-wrap{
-  position:relative;
-  width:min(220px, 100%);
-}
-.search-wrap input{
-  width:100%;
-  background:var(--panel-2);
-  border:1px solid var(--line);
-  color:var(--paper);
-  font-family:'IBM Plex Mono',monospace;
-  font-size:12px;
-  padding:7px 10px;
-  outline:none;
-}
-.search-wrap input:focus{border-color:var(--rust);outline:2px solid var(--amber);outline-offset:1px;}
-.search-results{
-  position:absolute;
-  top:100%;left:0;right:0;
-  background:var(--panel-2);
-  border:1px solid var(--line);
-  border-top:none;
-  z-index:5;
-  display:none;
-}
-.search-results.open{display:block;}
-.search-results div{
-  padding:7px 10px;
-  font-size:12px;
-  cursor:pointer;
-  color:var(--paper-dim);
-}
-.search-results div:hover, .search-results div.active{
-  background:var(--olive);
-  color:var(--paper);
-}
-.search-results .none{cursor:default;}
-.search-results .none:hover{background:none;color:var(--paper-dim);}
 header{
   background:var(--panel);
   border:1px solid var(--line);
@@ -208,6 +171,21 @@ footer{
   cursor:pointer;
 }
 .grind-list-count:hover{background:var(--danger);color:#fff;}
+.grind-list-fullscreen{
+  background:none;
+  border:1px solid var(--olive-light);
+  color:var(--amber);
+  font-family:inherit;
+  font-size:10.5px;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  padding:5px 12px;
+  cursor:pointer;
+}
+.grind-list-fullscreen:hover{border-color:var(--rust);color:var(--paper);}
+.grind-list.fullscreen .grind-list-panel{max-height:none;}
+.grind-list.fullscreen .grind-list-fullscreen{border-color:var(--danger);color:#e8a49c;}
+.grind-list.fullscreen .grind-list-fullscreen:hover{background:var(--danger);color:#fff;}
 .grind-list-panel{
   display:none;
   max-height:45vh;
@@ -222,6 +200,7 @@ footer{
   display:flex;
   justify-content:space-between;
   align-items:center;
+  gap:10px;
   padding:10px 16px;
   border-bottom:1px solid var(--line);
 }
@@ -236,6 +215,20 @@ footer{
   font-size:10.5px;
   color:var(--paper-dim);
 }
+.grind-item-actions{
+  flex-shrink:0;
+  display:flex;
+  gap:8px;
+}
+.grind-item-next{
+  background:none;
+  border:1px solid var(--olive-light);
+  color:var(--amber);
+  font-size:10px;
+  padding:2px 7px;
+  cursor:pointer;
+}
+.grind-item-next:hover{border-color:var(--rust);color:var(--paper);}
 .grind-item-remove{
   background:none;
   border:1px solid var(--danger);
@@ -251,6 +244,24 @@ footer{
   font-size:11px;
   color:var(--paper-dim);
 }
+
+/* Full Screen sizing tiers — text scales with how much vertical room each
+   pinned weapon gets, same mechanic as Easy Tarkov's Infil mode. */
+.grind-list.fs-lg .grind-item{padding:22px 24px;}
+.grind-list.fs-lg .grind-item-name{font-size:20px;}
+.grind-list.fs-lg .grind-item-sub{font-size:13px;}
+.grind-list.fs-lg .grind-item-next,
+.grind-list.fs-lg .grind-item-remove{font-size:12px;padding:5px 12px;}
+.grind-list.fs-md .grind-item{padding:14px 18px;}
+.grind-list.fs-md .grind-item-name{font-size:15px;}
+.grind-list.fs-md .grind-item-sub{font-size:11px;}
+.grind-list.fs-md .grind-item-next,
+.grind-list.fs-md .grind-item-remove{font-size:10px;padding:4px 10px;}
+.grind-list.fs-sm .grind-item{padding:8px 14px;}
+.grind-list.fs-sm .grind-item-name{font-size:12.5px;}
+.grind-list.fs-sm .grind-item-sub{font-size:9.5px;}
+.grind-list.fs-sm .grind-item-next,
+.grind-list.fs-sm .grind-item-remove{font-size:9px;padding:2px 7px;}
 
 /* ---- Mobile nav ---- */
 .mobile-menu-wrap{position:relative;display:none;}
@@ -286,34 +297,10 @@ footer{
   border-bottom:1px solid var(--line);
 }
 .mobile-menu-panel a:hover{background:var(--olive);color:var(--paper);}
-.mobile-search-btn{
-  display:none;
-  align-items:center;
-  justify-content:center;
-  background:var(--panel-2);
-  border:1px solid var(--olive-light);
-  color:var(--amber);
-  padding:0 11px;
-  cursor:pointer;
-}
-.mobile-search-btn:hover{border-color:var(--rust);color:var(--paper);}
-
 @media (max-width: 480px){
-  .topbar-right > a.trader-btn,
-  .topbar-right > .search-wrap{display:none;}
-  .topbar-right > .search-wrap.mobile-search-open{
-    display:block;
-    position:absolute;
-    top:100%;left:0;right:0;
-    margin-top:6px;
-    width:auto;
-    z-index:50;
-  }
+  .topbar-right > a.trader-btn{display:none;}
   .mobile-menu-wrap{display:inline-block;}
-  .mobile-search-btn{display:inline-flex;}
   .trader-btn{font-size:13px;padding:9px 13px;}
-  .search-wrap input{font-size:16px;padding:10px 12px;}
-  .search-results div{font-size:13px;padding:9px 12px;}
   .tab{font-size:13px;padding:7px 13px;}
   h1{font-size:26px;}
   .section-label{font-size:14px;}
@@ -353,13 +340,31 @@ footer{
 .progress-track{
   background:var(--panel-2);
   border:1px solid var(--line);
-  height:8px;
+  height:18px;
+  padding:2px;
+  display:flex;
+  flex-direction:column;
+  gap:1px;
 }
-.progress-fill{
-  background:var(--rust);
+.tier-fill-row{
+  flex:1;
+  min-height:0;
+  background:transparent;
+}
+.tier-fill-row-inner{
   height:100%;
   width:0%;
 }
+.tier-legend{
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  margin-top:8px;
+  font-size:10.5px;
+  color:var(--paper-dim);
+}
+.tier-legend-item{display:inline-flex;align-items:center;gap:5px;}
+.tier-legend-dot{width:8px;height:8px;flex-shrink:0;display:inline-block;}
 .task-filter{
   width:100%;
   background:var(--panel-2);
@@ -385,10 +390,13 @@ footer{
 .weapon-row{
   background:var(--panel);
   border:1px solid var(--line);
+  border-left:1px solid var(--line);
   padding:12px 16px;
+  cursor:pointer;
 }
 .weapon-row:hover{border-color:var(--rust);}
 .weapon-row.done{border-color:var(--amber);}
+.weapon-row.pinned{border-left:4px solid var(--rust);}
 .weapon-head{
   display:flex;
   justify-content:space-between;
@@ -408,18 +416,14 @@ footer{
   font-size:10.5px;
   color:var(--paper-dim);
 }
-.weapon-pin{
+.weapon-pinned-badge{
   flex-shrink:0;
-  background:none;
-  border:1px solid var(--olive-light);
-  color:var(--amber);
+  border:1px solid var(--rust);
+  color:var(--rust);
   font-family:'IBM Plex Mono',monospace;
   font-size:10px;
   padding:4px 9px;
-  cursor:pointer;
 }
-.weapon-pin:hover{border-color:var(--rust);color:var(--paper);}
-.weapon-pin.pinned{border-color:var(--amber);background:var(--olive);color:var(--paper);}
 .tier-row{
   display:flex;
   gap:8px;
@@ -456,4 +460,37 @@ footer{
 @media (max-width: 480px){
   .weapon-name{font-size:15px;}
   .tier-check{font-size:12px;padding:7px 11px;}
+}
+
+/* ---- Homepage class grid ---- */
+.class-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));
+  gap:10px;
+  margin-bottom:0;
+}
+.class-tile{
+  display:block;
+  background:var(--panel-2);
+  border:1px solid var(--line);
+  padding:14px 12px;
+  text-decoration:none;
+  text-align:left;
+}
+.class-tile:hover{border-color:var(--rust);}
+.class-tile-name{
+  font-family:'Oswald',sans-serif;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.03em;
+  font-size:13px;
+  color:var(--paper);
+  margin-bottom:4px;
+}
+.class-tile-count{
+  font-size:12px;
+  color:var(--amber);
+}
+.manage-data-row{
+  margin-top:36px;
 }

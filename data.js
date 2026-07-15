@@ -51,11 +51,32 @@ const WEAPONS = [
 
 // Sequential mastery tiers. "Onyx" and "Nova" are placeholder names standing
 // in for whatever MW4's actual top-tier camos turn out to be called.
+// `color` drives both the tier-line progress bar and the checklist styling —
+// update it here (not in CSS) when real tier names/colors are announced.
 const CAMO_TIERS = [
-  { key: 'gold', label: 'Gold' },
-  { key: 'platinum', label: 'Platinum' },
-  { key: 'onyx', label: 'Onyx' },
-  { key: 'nova', label: 'Nova' }
+  { key: 'gold', label: 'Gold', color: 'var(--rust)' },
+  { key: 'platinum', label: 'Platinum', color: '#c9f1f0' },
+  { key: 'onyx', label: 'Onyx', color: '#a8a9ab' },
+  { key: 'nova', label: 'Nova', color: '#a8a9ab' }
 ];
 
 const WEAPON_CLASSES = [...new Set(WEAPONS.map(w => w.class))];
+
+// Display label (usually plural) shown on the homepage class tiles.
+// Falls back to "<class>s" for any class not listed here, so adding a new
+// weapon class in the future doesn't require touching this map.
+const CLASS_LABELS = {
+  'Assault Rifle': 'Assault Rifles',
+  'SMG': 'SMGs',
+  'Shotgun': 'Shotguns',
+  'LMG': 'LMGs',
+  'Marksman Rifle': 'Marksman Rifles',
+  'Sniper Rifle': 'Sniper Rifles',
+  'Pistol': 'Pistols',
+  'Launcher': 'Launchers',
+  'Melee': 'Melee'
+};
+
+function classLabel(cls){
+  return CLASS_LABELS[cls] || (cls + 's');
+}
