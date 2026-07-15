@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manage Data | MW4 Camo Tracker</title>
+<meta property="og:type" content="website">
+<meta property="og:title" content="Manage Data | MW4 Camo Tracker">
+<meta property="og:description" content="Back up or restore your MW4 Camo Tracker progress on this browser.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Manage Data | MW4 Camo Tracker">
+<meta name="twitter:description" content="Back up or restore your MW4 Camo Tracker progress on this browser.">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#14171a">
+<link rel="preload" href="site.css" as="style">
+<link rel="stylesheet" href="site.css">
+<style>
+  body{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+  }
+  .hero{
+    max-width:480px;
+    width:100%;
+    text-align:center;
+  }
+  h1{
+    font-size:44px;
+    letter-spacing:.08em;
+    margin:0 0 10px;
+  }
+  .sub{
+    font-size:14px;
+    color:var(--paper-dim);
+    margin:0 0 28px;
+    letter-spacing:.02em;
+  }
+  .drop-box{
+    border:1px dashed var(--olive-light);
+    background:var(--panel-2);
+    padding:40px 20px;
+    cursor:pointer;
+    margin-bottom:16px;
+  }
+  .drop-box.dragover{border-color:var(--rust);}
+  .drop-box .icon{font-size:28px;color:var(--olive-light);display:block;margin-bottom:10px;}
+  .drop-box .label{font-size:13px;color:var(--paper-dim);line-height:1.6;}
+  .drop-box .filename{font-size:12px;color:var(--amber);margin-top:8px;}
+  input[type=file]{display:none;}
+  .export-btn{
+    display:block;
+    width:100%;
+    background:var(--panel-2);
+    border:1px solid var(--olive-light);
+    color:var(--amber);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    letter-spacing:.03em;
+    padding:12px 18px;
+    cursor:pointer;
+    margin-bottom:20px;
+  }
+  .export-btn:hover{border-color:var(--rust);color:var(--paper);}
+  .reset-btn{
+    display:block;
+    width:100%;
+    background:var(--panel-2);
+    border:1px solid var(--danger);
+    color:#e8a49c;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px;
+    letter-spacing:.03em;
+    padding:12px 18px;
+    cursor:pointer;
+    margin-top:32px;
+  }
+  .reset-btn:hover{background:var(--danger);color:#fff;}
+  .reset-btn.confirming{background:var(--danger);color:#fff;}
+  .status{
+    font-size:12px;
+    padding:10px 14px;
+    margin-bottom:16px;
+    display:none;
+  }
+  .status.show{display:block;}
+  .status.success{background:var(--olive);color:var(--paper);border:1px solid var(--amber);}
+  .status.error{background:var(--panel-2);color:#e8a49c;border:1px solid var(--danger);}
+  .home-link{
+    display:inline-block;
+    margin-top:32px;
+    font-size:11px;
+    color:var(--paper-dim);
+    text-decoration:none;
+    letter-spacing:.03em;
+  }
+  .home-link:hover{color:var(--amber);}
+</style>
+</head>
+<body>
+<div class="hero">
+  <h1>Manage Data</h1>
+  <div class="sub">Back up or restore your progress on this browser</div>
+
+  <div class="drop-box" id="dropBox">
+    <span class="icon">&#9660;</span>
+    <div class="label">Drag your progress file here<br>or click to browse</div>
+    <div class="filename" id="fileName"></div>
+  </div>
+  <input type="file" id="fileInput" accept=".json,application/json">
+
+  <div class="status" id="statusMsg"></div>
+
+  <button class="export-btn" id="exportBtn" type="button">Export</button>
+
+  <button class="reset-btn" id="resetBtn" type="button">Reset Progress</button>
+
+  <a class="home-link" href="index.html">&larr; Back to Homepage</a>
+</div>
+
+<script>
+const MW4CAMO_PREFIX = 'mw4camo-';
+
+function collectBundle(){
+  const bundle = {};
+  try{
+    for(let i = 0; i < localStorage.length; i++){
+      const key = localStorage.key(i);
+      if(key && key.indexOf(MW4CAMO_PREFIX) === 0){
+        bundle[key] = localStorage.getItem(key);
+      }
+    }
+  }catch(e){}
+  return bundle;
+}
+
+function showStatus(message, type){
+  const el = document.getElementById('statusMsg');
+  el.textContent = message;
+  el.className = 'status show ' + type;
+}
+
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const bundle = collectBundle();
+  const json = JSON.stringify(bundle, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'mw4camo-progress.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showStatus('Progress file downloaded.', 'success');
+});
+
+function handleImportFile(file){
+  if(!file){ return; }
+  if(!file.name.toLowerCase().endsWith('.json')){
+    showStatus('That doesn\'t look like a progress file (.json expected).', 'error');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    let data;
+    try{
+      data = JSON.parse(e.target.result);
+    }catch(err){
+      showStatus('Could not read that file \u2014 it may be corrupted.', 'error');
+      return;
+    }
+    const keys = Object.keys(data).filter(k => k.indexOf(MW4CAMO_PREFIX) === 0);
+    if(keys.length === 0){
+      showStatus('No recognizable progress data found in that file.', 'error');
+      return;
+    }
+    try{
+      keys.forEach(k => localStorage.setItem(k, data[k]));
+    }catch(err){
+      showStatus('Could not save the imported data to this browser.', 'error');
+      return;
+    }
+    document.getElementById('fileName').textContent = file.name;
+    showStatus('Progress imported \u2014 ' + keys.length + ' item(s) restored. Visit any page to see it reflected.', 'success');
+  };
+  reader.readAsText(file);
+}
+
+const dropBox = document.getElementById('dropBox');
+const fileInput = document.getElementById('fileInput');
+
+dropBox.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', (e) => handleImportFile(e.target.files[0]));
+
+dropBox.addEventListener('dragover', (e) => { e.preventDefault(); dropBox.classList.add('dragover'); });
+dropBox.addEventListener('dragleave', () => dropBox.classList.remove('dragover'));
+dropBox.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dropBox.classList.remove('dragover');
+  handleImportFile(e.dataTransfer.files[0]);
+});
+
+// ---- Reset progress (two-step confirm) ----
+const resetBtn = document.getElementById('resetBtn');
+const RESET_KEYS = ['mw4camo-progress', 'mw4camo-grindlist'];
+let resetPending = false;
+let resetTimeout = null;
+
+resetBtn.addEventListener('click', () => {
+  if(!resetPending){
+    resetPending = true;
+    resetBtn.textContent = 'Are you sure? Click to confirm';
+    resetBtn.classList.add('confirming');
+    resetTimeout = setTimeout(() => {
+      resetPending = false;
+      resetBtn.textContent = 'Reset Progress';
+      resetBtn.classList.remove('confirming');
+    }, 5000);
+    return;
+  }
+
+  clearTimeout(resetTimeout);
+  try{
+    RESET_KEYS.forEach(k => localStorage.removeItem(k));
+  }catch(e){}
+
+  resetPending = false;
+  resetBtn.classList.remove('confirming');
+  resetBtn.textContent = 'Reset Progress';
+  showStatus('Progress reset. Camo tiers and the Grind List have been cleared.', 'success');
+});
+</script>
+</body>
+</html>
