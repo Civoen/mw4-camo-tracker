@@ -206,7 +206,7 @@ dropBox.addEventListener('drop', (e) => {
 
 // ---- Reset progress (two-step confirm) ----
 const resetBtn = document.getElementById('resetBtn');
-const RESET_KEYS = ['mw4camo-progress', 'mw4camo-grindlist'];
+const RESET_KEYS = ['mw4camo-progress', 'mw4camo-grindlist', 'mw4camo-recent'];
 let resetPending = false;
 let resetTimeout = null;
 
@@ -231,7 +231,7 @@ resetBtn.addEventListener('click', () => {
   resetPending = false;
   resetBtn.classList.remove('confirming');
   resetBtn.textContent = 'Reset Progress';
-  showStatus('Progress reset. Camo tiers and the Grind List have been cleared.', 'success');
+  showStatus('Progress reset. Camo tiers, the Grind List, and recent activity have been cleared.', 'success');
 });
 </script>
 </body>

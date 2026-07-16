@@ -71,8 +71,70 @@ function advanceNextTier(name){
   if(!progress[name]) progress[name] = {};
   progress[name][CAMO_TIERS[nextIndex].key] = true;
   saveCamoProgress(progress);
+  logCamoChange(name, CAMO_TIERS[nextIndex].key);
   renderGrindList();
   document.dispatchEvent(new CustomEvent('grindlist:changed'));
+}
+
+// ---- Recent activity log ----
+// A simple feed of every tier earned, most recent first, shown on
+// recent.html. Capped so localStorage doesn't grow without bound.
+const RECENT_LOG_KEY = 'mw4camo-recent';
+const RECENT_LOG_LIMIT = 200;
+
+function loadRecentLog(){
+  try{
+    const raw = localStorage.getItem(RECENT_LOG_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){
+    return [];
+  }
+}
+
+function saveRecentLog(list){
+  try{ localStorage.setItem(RECENT_LOG_KEY, JSON.stringify(list)); }catch(e){}
+}
+
+function logCamoChange(weaponName, tierKey){
+  const w = weaponLookup(weaponName);
+  const tier = CAMO_TIERS.find(t => t.key === tierKey);
+  if(!tier) return;
+  const log = loadRecentLog();
+  log.unshift({ name: w.name, class: w.class, tierKey: tier.key, tierLabel: tier.label, ts: Date.now() });
+  saveRecentLog(log.slice(0, RECENT_LOG_LIMIT));
+}
+
+function formatRelativeTime(ts){
+  const diffSec = Math.round((Date.now() - ts) / 1000);
+  if(diffSec < 5) return 'Just now';
+  if(diffSec < 60) return diffSec + 's ago';
+  const diffMin = Math.round(diffSec / 60);
+  if(diffMin < 60) return diffMin + 'm ago';
+  const diffHr = Math.round(diffMin / 60);
+  if(diffHr < 24) return diffHr + 'h ago';
+  const diffDay = Math.round(diffHr / 24);
+  if(diffDay < 7) return diffDay + 'd ago';
+  return new Date(ts).toLocaleDateString();
+}
+
+// Renders the recent-activity feed on recent.html.
+function renderRecentList(containerId){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  const log = loadRecentLog();
+  el.innerHTML = log.length
+    ? log.map(entry =>
+        '<div class="recent-row">' +
+          '<span class="recent-dot" style="background:'+(CAMO_TIERS.find(t => t.key === entry.tierKey) || {}).color+'"></span>' +
+          '<span class="recent-main">' +
+            '<span class="recent-weapon">'+entry.name+'</span>' +
+            '<span class="recent-class">'+entry.class+'</span>' +
+          '</span>' +
+          '<span class="recent-tier">'+entry.tierLabel+'</span>' +
+          '<span class="recent-time">'+formatRelativeTime(entry.ts)+'</span>' +
+        '</div>'
+      ).join('')
+    : '<div class="empty-note">No camo activity yet. Check off a tier on the Camo Tracker page to see it here.</div>';
 }
 
 // ---- Grind List (pinned weapons currently being worked on) ----
@@ -218,6 +280,7 @@ if(topbarRightEl){
   const staticLinks = [
     { name: 'Home', url: 'index.html' },
     { name: 'Camo Tracker', url: 'camos.html' },
+    { name: 'Recent', url: 'recent.html' },
     { name: 'Manage Data', url: 'import.html' }
   ];
 
@@ -365,6 +428,7 @@ function initCamoChecklist(config){
           CAMO_TIERS.slice(idx + 1).forEach(t => { progress[name][t.key] = false; });
         }
         saveCamoProgress(progress);
+        if(box.checked) logCamoChange(name, tier);
         renderGrindList(); // keep "Next: X" labels in the Grind List current
         render();
       });

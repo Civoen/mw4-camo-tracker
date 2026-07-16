@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Camo Tracker | MW4 Camo Tracker</title>
+<title>Recent | MW4 Camo Tracker</title>
 <meta property="og:type" content="website">
-<meta property="og:title" content="Camo Tracker | MW4 Camo Tracker">
-<meta property="og:description" content="Track mastery camo progress across every Modern Warfare 4 weapon.">
+<meta property="og:title" content="Recent | MW4 Camo Tracker">
+<meta property="og:description" content="Every camo tier earned, most recent first.">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Camo Tracker | MW4 Camo Tracker">
-<meta name="twitter:description" content="Track mastery camo progress across every Modern Warfare 4 weapon.">
+<meta name="twitter:title" content="Recent | MW4 Camo Tracker">
+<meta name="twitter:description" content="Every camo tier earned, most recent first.">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#131211">
@@ -34,30 +34,14 @@
   </div>
 
   <header>
-    <span class="eyebrow">Placeholder Data &middot; BO6 Weapons</span>
-    <h1>Camo Tracker</h1>
+    <h1>Recent</h1>
   </header>
 
   <section>
-    <div class="placeholder-banner">
-      <b>Placeholder data.</b> Modern Warfare 4's real weapon list and camo challenges haven't
-      been revealed yet (game releases Oct 23, 2026). This tracker is seeded with Black Ops 6's
-      33 launch weapons and generic tier names (Gold / Platinum / Onyx / Nova) as a stand-in
-      structure &mdash; swap <code>data.js</code> once MW4's official camo system is announced.
-    </div>
-
-    <div class="class-filter-row" id="classFilter"></div>
-
-    <div class="progress-block">
-      <div class="big-pct" id="progressBigPct">0%<span>All Weapons &middot; Gold</span></div>
-      <div class="bars" id="progressBars"></div>
-    </div>
-
-    <div class="weapon-grid" id="weaponList"></div>
-    <div class="task-filter-empty" id="taskFilterEmpty">No weapons in this class yet.</div>
+    <div class="recent-list" id="recentList"></div>
   </section>
 
-  <footer>Click a weapon to pin it to Currently Grinding. Checking a tier requires the tier before it &mdash; unchecking a tier clears any tiers earned after it.</footer>
+  <footer>Every tier you check off on the Camo Tracker page (or advance via Next Camo) shows up here, most recent first.</footer>
 </div>
 
 <div class="grind-list" id="grindList">
@@ -74,11 +58,7 @@
 <script src="data.js"></script>
 <script src="site.js"></script>
 <script>
-initCamoChecklist({
-  listElId: 'weaponList',
-  classFilterId: 'classFilter',
-  filterEmptyId: 'taskFilterEmpty'
-});
+renderRecentList('recentList');
 </script>
 </body>
 </html>
