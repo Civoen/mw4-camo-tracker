@@ -57,7 +57,7 @@ const CAMO_TIERS = [
   { key: 'gold', label: 'Gold', color: 'var(--gold)' },
   { key: 'platinum', label: 'Platinum', color: '#c9f1f0' },
   { key: 'onyx', label: 'Onyx', color: '#a8a9ab' },
-  { key: 'nova', label: 'Nova', color: '#a8a9ab' }
+  { key: 'nova', label: 'Nova', color: '#ffffff' }
 ];
 
 const WEAPON_CLASSES = [...new Set(WEAPONS.map(w => w.class))];

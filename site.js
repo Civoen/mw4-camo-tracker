@@ -166,15 +166,13 @@ function weaponLookup(name){
 }
 
 // ---- Full Screen mode (identical behavior to Easy Tarkov's "Infil") ----
-// Expands the Grind List panel to fill the available vertical space and
-// scales item text based on how much room each pinned weapon gets.
+// Takes over the whole viewport: the page's own content is hidden (via a
+// body class) and the Grind List panel fills the space instead, scaling
+// item text based on how much room each pinned weapon gets.
 function applyFullscreenSizing(){
   if(!grindListEl.classList.contains('fullscreen')) return;
-  const header = document.querySelector('header');
   const barHeight = grindListEl.querySelector('.grind-list-bar').getBoundingClientRect().height;
-  const panelHeight = header
-    ? Math.max(200, window.innerHeight - header.getBoundingClientRect().top - barHeight)
-    : Math.max(200, window.innerHeight - barHeight - 40);
+  const panelHeight = Math.max(200, window.innerHeight - barHeight);
   grindListPanel.style.height = panelHeight + 'px';
 
   const budget = panelHeight / Math.max(1, grindList.length);
@@ -185,16 +183,18 @@ function applyFullscreenSizing(){
 function renderGrindList(){
   if(!grindListEl) return;
   applyFullscreenSizing();
+  const progress = loadCamoProgress();
   grindListCount.textContent = grindList.length;
   grindListPanel.innerHTML = grindList.length
     ? grindList.map(name => {
         const w = weaponLookup(name);
+        const mastered = isWeaponMastered(name, progress);
         return '<div class="grind-item" data-name="'+name+'">' +
           '<span><span class="grind-item-name">'+w.name+'</span><br>' +
           '<span class="grind-item-sub">'+w.class+' &middot; '+nextTierLabel(name)+'</span></span>' +
           '<span class="grind-item-actions">' +
             '<a class="grind-item-view" href="camos.html?class='+encodeURIComponent(w.class)+'">View Class</a>' +
-            '<button class="grind-item-next" data-name="'+name+'" type="button">Next Camo</button>' +
+            (mastered ? '' : '<button class="grind-item-next" data-name="'+name+'" type="button">Next Camo</button>') +
             '<button class="grind-item-remove" data-name="'+name+'" type="button">Remove</button>' +
           '</span>' +
         '</div>';
@@ -219,6 +219,7 @@ if(grindListEl){
     grindListFullscreen.addEventListener('click', (e) => {
       e.stopPropagation();
       const active = grindListEl.classList.toggle('fullscreen');
+      document.body.classList.toggle('grindlist-fullscreen', active);
       if(active){
         grindListEl.classList.add('open');
       }else{
@@ -281,6 +282,7 @@ if(topbarRightEl){
     { name: 'Home', url: 'index.html' },
     { name: 'Camo Tracker', url: 'camos.html' },
     { name: 'Recent', url: 'recent.html' },
+    { name: 'Mapfam', url: 'mapfam.html' },
     { name: 'Manage Data', url: 'import.html' }
   ];
 

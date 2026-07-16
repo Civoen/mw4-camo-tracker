@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Camo Tracker | MW4 Camo Tracker</title>
+<title>Mapfam | MW4 Camo Tracker</title>
 <meta property="og:type" content="website">
-<meta property="og:title" content="Camo Tracker | MW4 Camo Tracker">
-<meta property="og:description" content="Track mastery camo progress across every Modern Warfare 4 weapon.">
+<meta property="og:title" content="Mapfam | MW4 Camo Tracker">
+<meta property="og:description" content="A rows-of-images gallery for map notes, callouts, or whatever you want to track.">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Camo Tracker | MW4 Camo Tracker">
-<meta name="twitter:description" content="Track mastery camo progress across every Modern Warfare 4 weapon.">
+<meta name="twitter:title" content="Mapfam | MW4 Camo Tracker">
+<meta name="twitter:description" content="A rows-of-images gallery for map notes, callouts, or whatever you want to track.">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#131211">
@@ -36,30 +36,20 @@
   </div>
 
   <header>
-    <span class="eyebrow">Placeholder Data &middot; BO6 Weapons</span>
-    <h1>Camo Tracker</h1>
+    <h1>Mapfam</h1>
   </header>
 
   <section>
-    <div class="placeholder-banner">
-      <b>Placeholder data.</b> Modern Warfare 4's real weapon list and camo challenges haven't
-      been revealed yet (game releases Oct 23, 2026). This tracker is seeded with Black Ops 6's
-      33 launch weapons and generic tier names (Gold / Platinum / Onyx / Nova) as a stand-in
-      structure &mdash; swap <code>data.js</code> once MW4's official camo system is announced.
+    <div class="mapfam-note">Each row holds 4 image slots (1080&times;1080 recommended). Click an empty box to upload, click a filled one to zoom, rename or delete a row any time.</div>
+
+    <div class="mapfam-add-row">
+      <button class="trader-btn" id="mapfamAddRow" type="button">+ Add Row</button>
     </div>
 
-    <div class="class-filter-row" id="classFilter"></div>
-
-    <div class="progress-block">
-      <div class="big-pct" id="progressBigPct">0%<span>All Weapons &middot; Gold</span></div>
-      <div class="bars" id="progressBars"></div>
-    </div>
-
-    <div class="weapon-grid" id="weaponList"></div>
-    <div class="task-filter-empty" id="taskFilterEmpty">No weapons in this class yet.</div>
+    <div class="mapfam-rows" id="mapfamRows"></div>
   </section>
 
-  <footer>Click a weapon to pin it to Currently Grinding. Checking a tier requires the tier before it &mdash; unchecking a tier clears any tiers earned after it.</footer>
+  <footer>Images are stored in this browser only unless a Cloudflare Worker upload endpoint has been configured in mapfam.js.</footer>
 </div>
 
 <div class="grind-list" id="grindList">
@@ -75,11 +65,11 @@
 
 <script src="data.js"></script>
 <script src="site.js"></script>
+<script src="mapfam.js"></script>
 <script>
-initCamoChecklist({
-  listElId: 'weaponList',
-  classFilterId: 'classFilter',
-  filterEmptyId: 'taskFilterEmpty'
+initMapfam({
+  rowsElId: 'mapfamRows',
+  addRowBtnId: 'mapfamAddRow'
 });
 </script>
 </body>
