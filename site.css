@@ -4,7 +4,7 @@
   --panel-2:#221f1c;
   --line:#332f2a;
   --hazard:#ff5a1f;
-  --gold:#ffcf40;
+  --gold:#fecf41;
   --paper:#f2efe9;
   --dim:#948e84;
   --danger:#e0362b;
@@ -35,8 +35,8 @@ h1{
   display:inline-flex;
   align-items:center;
   gap:8px;
-  background:var(--hazard);
-  color:#1a0900;
+  background:var(--gold);
+  color:#1a1200;
   font-weight:700;
   font-size:11px;
   letter-spacing:.12em;
@@ -187,25 +187,32 @@ footer{
   gap:14px;
 }
 .weapon-card{
-  background:var(--panel);
-  border:1px solid var(--line);
-  padding:18px 18px 16px;
   position:relative;
+  background:var(--line);
+  padding:1px;
   cursor:pointer;
   clip-path:polygon(0 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%);
 }
-.weapon-card:hover{border-color:var(--hazard);}
-.weapon-card.mastered{border-color:var(--gold);}
+.weapon-card:hover{background:var(--hazard);}
+.weapon-card.mastered{background:var(--gold);}
+.weapon-card .card-inner{
+  display:block;
+  height:100%;
+  background:var(--panel);
+  padding:18px 18px 16px;
+  clip-path:polygon(0 0, 100% 0, 100% calc(100% - 13px), calc(100% - 13px) 100%, 0 100%);
+}
 .weapon-card.pinned:before{
   content:"PINNED";
   position:absolute;
-  top:0; left:0;
+  top:1px; left:1px;
   background:var(--hazard);
   color:#1a0900;
   font-size:9px;
   font-weight:700;
   letter-spacing:.08em;
   padding:3px 8px;
+  z-index:1;
 }
 .weapon-name{
   font-family:'Anton', 'DejaVu Sans Condensed', sans-serif;
@@ -271,14 +278,19 @@ footer{
 }
 .class-tile{
   display:block;
-  background:var(--panel);
-  border:1px solid var(--line);
-  padding:14px 14px 12px;
+  background:var(--tile-border, var(--line));
+  padding:1px;
   text-decoration:none;
   text-align:left;
   clip-path:polygon(0 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%);
 }
-.class-tile:hover{border-color:var(--hazard);}
+.class-tile:hover{background:var(--hazard);}
+.class-tile .card-inner{
+  display:block;
+  background:var(--panel);
+  padding:14px 14px 12px;
+  clip-path:polygon(0 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%);
+}
 .class-tile-name{
   font-family:'Anton', 'DejaVu Sans Condensed', sans-serif;
   font-weight:400;
@@ -291,7 +303,7 @@ footer{
 .class-tile-count{
   font-size:12px;
   font-weight:700;
-  color:var(--gold);
+  color:var(--tile-border, var(--gold));
 }
 .manage-data-row{margin-top:32px;}
 
@@ -356,7 +368,7 @@ footer{
 .grind-list-bar{
   width:100%;
   background:var(--panel);
-  border-top:3px solid var(--hazard);
+  border-top:3px solid var(--gold);
   border-left:1px solid var(--line);
   border-right:1px solid var(--line);
   padding:10px 16px;
@@ -379,8 +391,8 @@ footer{
   gap:10px;
 }
 .grind-list-count{
-  background:var(--hazard);
-  color:#1a0900;
+  background:var(--gold);
+  color:#1a1200;
   font-weight:700;
   padding:2px 9px;
   font-size:11px;
@@ -400,7 +412,7 @@ footer{
   padding:6px 12px;
   cursor:pointer;
 }
-.grind-list-fullscreen:hover{border-color:var(--hazard);color:var(--hazard);}
+.grind-list-fullscreen:hover{border-color:var(--gold);color:var(--gold);}
 .grind-list.fullscreen .grind-list-panel{max-height:none;}
 .grind-list.fullscreen .grind-list-fullscreen{border-color:var(--danger);color:#f2a89e;}
 .grind-list.fullscreen .grind-list-fullscreen:hover{background:var(--danger);color:#fff;}
@@ -439,6 +451,20 @@ footer{
   display:flex;
   gap:8px;
 }
+.grind-item-view{
+  background:none;
+  border:1px solid var(--line);
+  color:var(--paper);
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.03em;
+  font-size:10px;
+  padding:4px 9px;
+  cursor:pointer;
+  text-decoration:none;
+  display:inline-block;
+}
+.grind-item-view:hover{border-color:var(--paper);}
 .grind-item-next{
   background:none;
   border:1px solid var(--gold);
@@ -475,6 +501,7 @@ footer{
 .grind-list.fs-lg .grind-item{padding:20px 22px;}
 .grind-list.fs-lg .grind-item-name{font-size:19px;}
 .grind-list.fs-lg .grind-item-sub{font-size:12.5px;}
+.grind-list.fs-lg .grind-item-view,
 .grind-list.fs-lg .grind-item-next,
 .grind-list.fs-lg .grind-item-remove{font-size:11.5px;padding:6px 12px;}
 .grind-list.fs-md .grind-item{padding:13px 17px;}
@@ -488,5 +515,5 @@ footer{
   .grind-list-toggle{font-size:10.5px;}
   .grind-item-name{font-size:13px;}
   .grind-item-sub{font-size:9.5px;}
-  .grind-item-next, .grind-item-remove{font-size:9px;padding:4px 8px;}
+  .grind-item-view, .grind-item-next, .grind-item-remove{font-size:9px;padding:4px 8px;}
 }

@@ -75,10 +75,16 @@ renderClassSummary('classGrid');
 
 (function(){
   const progress = loadCamoProgress();
-  const total = WEAPONS.length;
-  const done = WEAPONS.filter(w => isWeaponMastered(w.name, progress)).length;
-  const pct = total ? Math.round((done / total) * 100) : 0;
-  document.getElementById('homeBigPct').innerHTML = pct + '%<span>All Weapons &middot; ' + done + ' of ' + total + ' mastered</span>';
+  // Counts every camo tier earned across every weapon (not just fully
+  // mastered weapons) so a single Gold pickup moves this bar.
+  const totalPossible = WEAPONS.length * CAMO_TIERS.length;
+  let earned = 0;
+  WEAPONS.forEach(w => {
+    const p = progress[w.name] || {};
+    CAMO_TIERS.forEach(t => { if(p[t.key]) earned++; });
+  });
+  const pct = totalPossible ? Math.round((earned / totalPossible) * 100) : 0;
+  document.getElementById('homeBigPct').innerHTML = pct + '%<span>Overall Progress &middot; ' + earned + ' of ' + totalPossible + ' camos earned</span>';
 })();
 </script>
 </body>

@@ -20,12 +20,28 @@ function isWeaponMastered(name, progress){
   return CAMO_TIERS.every(t => p[t.key]);
 }
 
+// True once every weapon in `weaponsArr` has tier `tierKey` checked.
+function tierCompleteForWeapons(weaponsArr, tierKey, progress){
+  return weaponsArr.length > 0 && weaponsArr.every(w => (progress[w.name] || {})[tierKey]);
+}
+
 // True once every weapon in `cls` has tier `tierKey` checked. Mastery camo
 // tiers beyond Gold are gated at the class level (e.g. no weapon can start
 // Platinum until every weapon in its class has Gold) rather than per-weapon.
 function classTierComplete(cls, tierKey, progress){
-  const weapons = WEAPONS.filter(w => w.class === cls);
-  return weapons.length > 0 && weapons.every(w => (progress[w.name] || {})[tierKey]);
+  return tierCompleteForWeapons(WEAPONS.filter(w => w.class === cls), tierKey, progress);
+}
+
+// The color of the highest tier that's fully complete across every weapon
+// in `weaponsArr` (used to recolor a class tile once, say, all Gold is in).
+// Returns null if not even the first tier is fully complete yet.
+function highestCompleteTierColor(weaponsArr, progress){
+  let color = null;
+  for(let i = 0; i < CAMO_TIERS.length; i++){
+    if(tierCompleteForWeapons(weaponsArr, CAMO_TIERS[i].key, progress)) color = CAMO_TIERS[i].color;
+    else break;
+  }
+  return color;
 }
 
 // Whether a given tier is unlocked for a specific weapon right now.
@@ -43,14 +59,15 @@ function nextTierLabel(name){
 }
 
 // Checks the next available tier for a weapon (used by the "Next Camo"
-// button in the Grind List). No-ops if the tier is locked or already maxed.
+// button in the Grind List). This is a personal-pace shortcut for the
+// pinned weapon, so unlike the checklist on the Camo Tracker page it isn't
+// gated behind the rest of the class — it always advances one tier per
+// click until that weapon is fully mastered.
 function advanceNextTier(name){
-  const weapon = weaponLookup(name);
   const progress = loadCamoProgress();
   const p = progress[name] || {};
   const nextIndex = CAMO_TIERS.findIndex(t => !p[t.key]);
   if(nextIndex === -1) return; // already fully mastered
-  if(!tierUnlocked(weapon, nextIndex, progress)) return; // gated, can't skip ahead
   if(!progress[name]) progress[name] = {};
   progress[name][CAMO_TIERS[nextIndex].key] = true;
   saveCamoProgress(progress);
@@ -114,6 +131,7 @@ function renderGrindList(){
           '<span><span class="grind-item-name">'+w.name+'</span><br>' +
           '<span class="grind-item-sub">'+w.class+' &middot; '+nextTierLabel(name)+'</span></span>' +
           '<span class="grind-item-actions">' +
+            '<a class="grind-item-view" href="camos.html?class='+encodeURIComponent(w.class)+'">View Class</a>' +
             '<button class="grind-item-next" data-name="'+name+'" type="button">Next Camo</button>' +
             '<button class="grind-item-remove" data-name="'+name+'" type="button">Remove</button>' +
           '</span>' +
@@ -232,20 +250,24 @@ function renderClassSummary(containerId){
   if(!el) return;
   const progress = loadCamoProgress();
 
-  function tile(label, count, total, href){
-    return '<a class="class-tile" href="'+href+'">' +
-      '<div class="class-tile-name">'+label+'</div>' +
-      '<div class="class-tile-count">'+count+'/'+total+'</div>' +
+  function tile(label, count, total, href, weaponsInScope){
+    const color = highestCompleteTierColor(weaponsInScope, progress);
+    const styleAttr = color ? ' style="--tile-border:' + color + '"' : '';
+    return '<a class="class-tile" href="'+href+'"'+styleAttr+'>' +
+      '<span class="card-inner">' +
+        '<span class="class-tile-name">'+label+'</span>' +
+        '<span class="class-tile-count">'+count+'/'+total+'</span>' +
+      '</span>' +
     '</a>';
   }
 
   const allDone = WEAPONS.filter(w => isWeaponMastered(w.name, progress)).length;
-  let html = tile('All Weapons', allDone, WEAPONS.length, 'camos.html');
+  let html = tile('All Weapons', allDone, WEAPONS.length, 'camos.html', WEAPONS);
 
   WEAPON_CLASSES.forEach(cls => {
     const weapons = WEAPONS.filter(w => w.class === cls);
     const done = weapons.filter(w => isWeaponMastered(w.name, progress)).length;
-    html += tile(classLabel(cls), done, weapons.length, 'camos.html?class=' + encodeURIComponent(cls));
+    html += tile(classLabel(cls), done, weapons.length, 'camos.html?class=' + encodeURIComponent(cls), weapons);
   });
 
   el.innerHTML = html;
@@ -310,9 +332,11 @@ function initCamoChecklist(config){
       '</label>';
     }).join('');
     return '<div class="weapon-card'+(isWeaponMastered(w.name, progress) ? ' mastered' : '')+(pinned ? ' pinned' : '')+'" data-name="'+w.name+'" data-class="'+w.class+'">' +
-      '<div class="weapon-name">'+w.name+'</div>' +
-      '<div class="weapon-class">'+w.class+'</div>' +
-      '<div class="swatch-row">'+swatchesHtml+'</div>' +
+      '<div class="card-inner">' +
+        '<div class="weapon-name">'+w.name+'</div>' +
+        '<div class="weapon-class">'+w.class+'</div>' +
+        '<div class="swatch-row">'+swatchesHtml+'</div>' +
+      '</div>' +
     '</div>';
   }
 
