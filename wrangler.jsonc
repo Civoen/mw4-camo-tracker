@@ -1,0 +1,8 @@
+{
+  "name": "mw4-camo-tracker",
+  "compatibility_date": "2026-07-16",
+  "assets": {
+    "directory": "./",
+    "not_found_handling": "404-page"
+  }
+}
