@@ -641,6 +641,13 @@ body.grindlist-fullscreen > .hero{
   cursor:pointer;
 }
 .grind-item-next:hover{background:var(--gold);color:#1a1200;}
+.grind-item-next:disabled{
+  border-color:var(--line);
+  color:var(--dim);
+  opacity:.6;
+  cursor:not-allowed;
+}
+.grind-item-next:disabled:hover{background:none;color:var(--dim);}
 .grind-item-remove{
   background:none;
   border:1px solid var(--danger);

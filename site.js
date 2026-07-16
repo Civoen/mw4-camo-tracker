@@ -59,15 +59,17 @@ function nextTierLabel(name){
 }
 
 // Checks the next available tier for a weapon (used by the "Next Camo"
-// button in the Grind List). This is a personal-pace shortcut for the
-// pinned weapon, so unlike the checklist on the Camo Tracker page it isn't
-// gated behind the rest of the class — it always advances one tier per
-// click until that weapon is fully mastered.
+// button in the Grind List). Respects the same class-wide gate as the
+// checklist on the Camo Tracker page — a weapon can't advance to Platinum
+// until every weapon in its class has Gold, and so on up the tiers. No-ops
+// if the next tier is locked or the weapon is already fully mastered.
 function advanceNextTier(name){
+  const weapon = weaponLookup(name);
   const progress = loadCamoProgress();
   const p = progress[name] || {};
   const nextIndex = CAMO_TIERS.findIndex(t => !p[t.key]);
   if(nextIndex === -1) return; // already fully mastered
+  if(!tierUnlocked(weapon, nextIndex, progress)) return; // rest of the class hasn't caught up yet
   if(!progress[name]) progress[name] = {};
   progress[name][CAMO_TIERS[nextIndex].key] = true;
   saveCamoProgress(progress);
@@ -189,12 +191,18 @@ function renderGrindList(){
     ? grindList.map(name => {
         const w = weaponLookup(name);
         const mastered = isWeaponMastered(name, progress);
+        const p = progress[name] || {};
+        const nextIndex = CAMO_TIERS.findIndex(t => !p[t.key]);
+        const unlocked = nextIndex !== -1 && tierUnlocked(w, nextIndex, progress);
+        const nextBtnHtml = mastered
+          ? ''
+          : '<button class="grind-item-next" data-name="'+name+'" type="button"'+(unlocked ? '' : ' disabled title="Locked until the rest of the class catches up"')+'>Next Camo</button>';
         return '<div class="grind-item" data-name="'+name+'">' +
           '<span><span class="grind-item-name">'+w.name+'</span><br>' +
           '<span class="grind-item-sub">'+w.class+' &middot; '+nextTierLabel(name)+'</span></span>' +
           '<span class="grind-item-actions">' +
             '<a class="grind-item-view" href="camos.html?class='+encodeURIComponent(w.class)+'">View Class</a>' +
-            (mastered ? '' : '<button class="grind-item-next" data-name="'+name+'" type="button">Next Camo</button>') +
+            nextBtnHtml +
             '<button class="grind-item-remove" data-name="'+name+'" type="button">Remove</button>' +
           '</span>' +
         '</div>';

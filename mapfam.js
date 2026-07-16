@@ -1,26 +1,30 @@
 // ============================================================
 // MAPFAM UPLOAD CONFIG
 // ============================================================
-// By default this is null. In that state, images are stored directly in
+// By default this is false. In that state, images are stored directly in
 // THIS browser's localStorage (as base64) — the page works immediately
 // with no setup, but images are 100% private to this one browser. Nobody
 // else visiting the site sees them, and there's no way around that without
 // a server: a static site has nowhere shared to keep a list of images.
 //
-// To make uploads visible to every visitor, you need a small Cloudflare
-// Worker that both stores the image in R2 AND keeps a shared manifest of
-// what's been uploaded (see worker-example.js in this folder — it's
-// untested starter code, not a deployed/verified service). Once deployed,
-// set its URL below. From then on:
+// To make uploads visible to every visitor, this site's own Worker (see
+// worker.js at the repo root) already has an /api/mapfam route that stores
+// images in R2 and keeps a shared manifest of what's been uploaded — you
+// just need to point Cloudflare at a real R2 bucket for it (see the setup
+// guide: create the bucket, add the binding, add the public URL variable,
+// all done by clicking through the Cloudflare dashboard, no terminal
+// needed). Once that's done, flip this to true. From then on:
 //   - On page load, every visitor's browser fetches the current image list
-//     from the Worker instead of reading its own localStorage.
-//   - Uploads POST to the Worker, which stores the file in R2, updates the
-//     shared list, and every visitor sees the new image on their next load.
-const MAPFAM_UPLOAD_ENDPOINT = null; // e.g. 'https://mapfam-upload.yourname.workers.dev'
+//     from /api/mapfam instead of reading its own localStorage.
+//   - Uploads POST to /api/mapfam, which stores the file in R2, updates
+//     the shared list, and every visitor sees the new image on their next
+//     page load.
+const MAPFAM_SHARED_MODE = false;
+const MAPFAM_UPLOAD_ENDPOINT = '/api/mapfam'; // same-origin, no CORS setup needed
 
-// If your Worker checks an UPLOAD_TOKEN (see worker-example.js setup step
-// 5), set the same value here so uploads/removals are authorized. Leave
-// blank if you haven't set one up.
+// If you set an UPLOAD_TOKEN secret on the Worker (see setup guide), put
+// the same value here so uploads/removals are authorized. Leave blank if
+// you haven't set one up.
 const MAPFAM_UPLOAD_TOKEN = '';
 
 // ============================================================
@@ -64,7 +68,7 @@ function initMapfam(config){
   const gridEl = document.getElementById(config.gridElId);
   const addImageBtn = document.getElementById(config.addImageBtnId);
   const lockToggleBtn = document.getElementById(config.lockToggleBtnId);
-  const shared = !!MAPFAM_UPLOAD_ENDPOINT;
+  const shared = MAPFAM_SHARED_MODE;
   let images = shared ? [] : loadLocalMapfamImages(); // {id, url|src}
   let unlocked = isMapfamUnlocked();
 
@@ -169,7 +173,7 @@ function initMapfam(config){
         })
         .catch(err => {
           console.error('Mapfam upload failed:', err);
-          alert('Upload to your Worker failed. Check MAPFAM_UPLOAD_ENDPOINT/MAPFAM_UPLOAD_TOKEN in mapfam.js and your Worker\'s CORS settings, then try again.');
+          alert('Upload failed. Check that the R2 bucket binding and MAPFAM_PUBLIC_BASE_URL variable are set on this Worker in the Cloudflare dashboard, then try again.');
         });
     }else{
       const reader = new FileReader();
@@ -223,7 +227,7 @@ function initMapfam(config){
       })
       .catch(err => {
         console.error('Mapfam load failed:', err);
-        gridEl.innerHTML = '<div class="empty-note">Could not load images from the server. Check MAPFAM_UPLOAD_ENDPOINT in mapfam.js.</div>';
+        gridEl.innerHTML = '<div class="empty-note">Could not load images from the server. Check the R2 bucket binding on this Worker in the Cloudflare dashboard.</div>';
         updateLockUI();
       });
   }else{
