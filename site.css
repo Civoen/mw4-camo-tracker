@@ -338,49 +338,20 @@ footer{
 .mapfam-note{
   font-size:11.5px;
   color:var(--dim);
-  margin-bottom:20px;
+  margin-bottom:16px;
 }
-.mapfam-add-row{margin-bottom:22px;}
-.mapfam-rows{display:flex;flex-direction:column;gap:28px;}
-.mapfam-row-head{
+.mapfam-toolbar{
   display:flex;
-  align-items:center;
   gap:10px;
-  margin-bottom:10px;
+  margin-bottom:22px;
   flex-wrap:wrap;
 }
-.mapfam-row-label{
-  flex:1;
-  min-width:120px;
-  background:var(--panel-2);
-  border:1px solid var(--line);
-  color:var(--paper);
-  font-family:'Stack Sans Headline', 'DejaVu Sans Condensed', sans-serif;
-  font-weight:700;
-  text-transform:uppercase;
-  letter-spacing:.01em;
-  font-size:16px;
-  padding:8px 12px;
-}
-.mapfam-row-label:focus{border-color:var(--gold);outline:none;}
-.mapfam-row-delete{
-  background:none;
-  border:1px solid var(--danger);
-  color:#f2a89e;
-  font-weight:700;
-  text-transform:uppercase;
-  letter-spacing:.03em;
-  font-size:10.5px;
-  padding:8px 12px;
-  cursor:pointer;
-  flex-shrink:0;
-}
-.mapfam-row-delete:hover{background:var(--danger);color:#fff;}
 .mapfam-grid{
   display:grid;
   grid-template-columns:repeat(4, 1fr);
-  gap:12px;
+  gap:20px 12px;
 }
+.mapfam-item{display:flex;flex-direction:column;gap:6px;}
 .mapfam-box{
   position:relative;
   background:var(--line);
@@ -406,8 +377,6 @@ footer{
   object-fit:cover;
   display:block;
 }
-.mapfam-box-plus{font-size:28px;color:var(--dim);line-height:1;}
-.mapfam-box:hover .mapfam-box-plus{color:var(--gold);}
 .mapfam-box-remove{
   position:absolute;
   top:6px; right:6px;
@@ -423,7 +392,22 @@ footer{
   z-index:1;
 }
 .mapfam-box-remove:hover{background:var(--danger);border-color:var(--danger);color:#fff;}
-.mapfam-box-uploading{font-size:10.5px;color:var(--dim);text-transform:uppercase;letter-spacing:.05em;}
+.mapfam-title{
+  width:100%;
+  background:var(--panel-2);
+  border:1px solid var(--line);
+  color:var(--paper);
+  font-family:'Barlow', sans-serif;
+  font-size:11.5px;
+  padding:6px 8px;
+}
+.mapfam-title:focus{border-color:var(--gold);outline:none;}
+.mapfam-title-view{
+  font-size:11.5px;
+  color:var(--paper);
+  padding:6px 1px;
+  overflow-wrap:break-word;
+}
 
 @media (max-width: 640px){
   .mapfam-grid{grid-template-columns:repeat(2, 1fr);}

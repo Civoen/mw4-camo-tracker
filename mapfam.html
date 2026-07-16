@@ -40,13 +40,14 @@
   </header>
 
   <section>
-    <div class="mapfam-note">Each row holds 4 image slots (1080&times;1080 recommended). Click an empty box to upload, click a filled one to zoom, rename or delete a row any time.</div>
+    <div class="mapfam-note">Images are 1080&times;1080. Click an image to zoom. Editing (adding, renaming, removing) is locked unless you enter the passphrase.</div>
 
-    <div class="mapfam-add-row">
-      <button class="trader-btn" id="mapfamAddRow" type="button">+ Add Row</button>
+    <div class="mapfam-toolbar">
+      <button class="trader-btn" id="mapfamAddImage" type="button" style="display:none;">+ Add Image</button>
+      <button class="trader-btn" id="mapfamLockToggle" type="button">Unlock Editing</button>
     </div>
 
-    <div class="mapfam-rows" id="mapfamRows"></div>
+    <div class="mapfam-grid" id="mapfamGrid"></div>
   </section>
 
   <footer>Images are stored in this browser only unless a Cloudflare Worker upload endpoint has been configured in mapfam.js.</footer>
@@ -68,8 +69,9 @@
 <script src="mapfam.js"></script>
 <script>
 initMapfam({
-  rowsElId: 'mapfamRows',
-  addRowBtnId: 'mapfamAddRow'
+  gridElId: 'mapfamGrid',
+  addImageBtnId: 'mapfamAddImage',
+  lockToggleBtnId: 'mapfamLockToggle'
 });
 </script>
 </body>
