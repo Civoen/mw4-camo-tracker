@@ -283,10 +283,10 @@ if(topbarRightEl){
     { name: 'Camo Tracker', url: 'camos.html' },
     { name: 'Recent', url: 'recent.html' },
     { name: 'Mapfam', url: 'mapfam.html' },
-    { name: 'Manage Data', url: 'import.html' }
+    { name: 'Manage Data', url: 'import.html', danger: true }
   ];
 
-  mobileMenuPanel.innerHTML = staticLinks.map(l => '<a href="'+l.url+'">'+l.name+'</a>').join('');
+  mobileMenuPanel.innerHTML = staticLinks.map(l => '<a href="'+l.url+'"'+(l.danger ? ' class="mobile-menu-danger"' : '')+'>'+l.name+'</a>').join('');
 
   mobileMenuBtn.addEventListener('click', (e) => {
     e.stopPropagation();

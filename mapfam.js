@@ -1,38 +1,41 @@
 // ============================================================
 // MAPFAM UPLOAD CONFIG
 // ============================================================
-// By default this is null, which means images are stored directly in this
-// browser's localStorage (as base64) so the page works immediately with no
-// setup. That's fine for a handful of images, but localStorage typically
-// caps out around 5-10MB per site — with 1080x1080 photos you'll hit that
-// ceiling fast, and nothing here is shared between browsers/devices.
+// By default this is null. In that state, images are stored directly in
+// THIS browser's localStorage (as base64) — the page works immediately
+// with no setup, but images are 100% private to this one browser. Nobody
+// else visiting the site sees them, and there's no way around that without
+// a server: a static site has nowhere shared to keep a list of images.
 //
-// To actually host images on Cloudflare R2:
-//   1. Create an R2 bucket and a Worker that accepts an upload and returns
-//      the public URL (see worker-example.js in this folder for a starting
-//      point — it's untested starter code, not a deployed/verified service).
-//   2. Deploy that Worker and set its URL below.
-//   3. Once set, uploads POST straight to your Worker, which stores the
-//      file in R2 and hands back a permanent URL. Only that small URL
-//      string gets saved in localStorage, so the size ceiling problem goes
-//      away and the same image URL works on any device.
+// To make uploads visible to every visitor, you need a small Cloudflare
+// Worker that both stores the image in R2 AND keeps a shared manifest of
+// what's been uploaded (see worker-example.js in this folder — it's
+// untested starter code, not a deployed/verified service). Once deployed,
+// set its URL below. From then on:
+//   - On page load, every visitor's browser fetches the current image list
+//     from the Worker instead of reading its own localStorage.
+//   - Uploads POST to the Worker, which stores the file in R2, updates the
+//     shared list, and every visitor sees the new image on their next load.
 const MAPFAM_UPLOAD_ENDPOINT = null; // e.g. 'https://mapfam-upload.yourname.workers.dev'
+
+// If your Worker checks an UPLOAD_TOKEN (see worker-example.js setup step
+// 5), set the same value here so uploads/removals are authorized. Leave
+// blank if you haven't set one up.
+const MAPFAM_UPLOAD_TOKEN = '';
 
 // ============================================================
 // MAPFAM EDIT LOCK
 // ============================================================
-// This is a static site with no server, so there's no real authentication
-// system available — this passphrase lives in plain text in this file and
-// anyone who reads the page's source can find it. Treat it as a casual
-// deterrent that keeps the "Add Image" button and edit controls hidden
-// from ordinary visitors, not as real security. Change it to whatever you
-// like before deploying.
+// This only gates the "Add Image" / remove controls in THIS browser's UI —
+// it does not restrict who can view images, and (like everything static)
+// it's not real security since the passphrase lives in this file's plain
+// text source. Change it to whatever you like before deploying.
 const MAPFAM_EDIT_PASSPHRASE = 'changeme';
 const MAPFAM_UNLOCK_KEY = 'mw4camo-mapfam-unlocked';
 
-const MAPFAM_IMAGES_KEY = 'mw4camo-mapfam-images';
+const MAPFAM_IMAGES_KEY = 'mw4camo-mapfam-images'; // local-only fallback storage
 
-function loadMapfamImages(){
+function loadLocalMapfamImages(){
   try{
     const raw = localStorage.getItem(MAPFAM_IMAGES_KEY);
     return raw ? JSON.parse(raw) : [];
@@ -40,7 +43,7 @@ function loadMapfamImages(){
     return [];
   }
 }
-function saveMapfamImages(images){
+function saveLocalMapfamImages(images){
   try{
     localStorage.setItem(MAPFAM_IMAGES_KEY, JSON.stringify(images));
     return true;
@@ -53,11 +56,16 @@ function isMapfamUnlocked(){
   try{ return localStorage.getItem(MAPFAM_UNLOCK_KEY) === '1'; }catch(e){ return false; }
 }
 
+function mapfamAuthHeaders(){
+  return MAPFAM_UPLOAD_TOKEN ? { 'X-Upload-Token': MAPFAM_UPLOAD_TOKEN } : {};
+}
+
 function initMapfam(config){
   const gridEl = document.getElementById(config.gridElId);
   const addImageBtn = document.getElementById(config.addImageBtnId);
   const lockToggleBtn = document.getElementById(config.lockToggleBtnId);
-  let images = loadMapfamImages();
+  const shared = !!MAPFAM_UPLOAD_ENDPOINT;
+  let images = shared ? [] : loadLocalMapfamImages(); // {id, url|src}
   let unlocked = isMapfamUnlocked();
 
   // Hidden file input, reused for every upload.
@@ -78,6 +86,8 @@ function initMapfam(config){
     zoomImg.src = '';
   });
 
+  function imgSrc(img){ return img.url || img.src; }
+
   function updateLockUI(){
     if(!lockToggleBtn) return;
     lockToggleBtn.textContent = unlocked ? 'Lock Editing' : 'Unlock Editing';
@@ -93,35 +103,19 @@ function initMapfam(config){
   }
 
   function renderItem(img){
-    const titleHtml = unlocked
-      ? '<input class="mapfam-title" data-id="'+img.id+'" value="'+img.title.replace(/"/g, '&quot;')+'">'
-      : '<div class="mapfam-title-view">'+img.title.replace(/</g, '&lt;')+'</div>';
-    return '<div class="mapfam-item">' +
-      '<div class="mapfam-box" data-id="'+img.id+'">' +
-        '<div class="card-inner" data-id="'+img.id+'">' +
-          '<img src="'+img.src+'" alt="'+img.title.replace(/"/g, '&quot;')+'">' +
-          (unlocked ? '<button class="mapfam-box-remove" data-id="'+img.id+'" type="button" aria-label="Remove image">&times;</button>' : '') +
-        '</div>' +
+    return '<div class="mapfam-box" data-id="'+img.id+'">' +
+      '<div class="card-inner" data-id="'+img.id+'">' +
+        '<img src="'+imgSrc(img)+'" alt="Uploaded map image">' +
+        (unlocked ? '<button class="mapfam-box-remove" data-id="'+img.id+'" type="button" aria-label="Remove image">&times;</button>' : '') +
       '</div>' +
-      titleHtml +
     '</div>';
   }
 
   function bindEvents(){
-    gridEl.querySelectorAll('.mapfam-title').forEach(input => {
-      input.addEventListener('change', () => {
-        const id = input.getAttribute('data-id');
-        const img = images.find(i => i.id === id);
-        if(img){ img.title = input.value.trim() || 'Untitled'; saveMapfamImages(images); render(); }
-      });
-    });
     gridEl.querySelectorAll('.mapfam-box-remove').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        const id = btn.getAttribute('data-id');
-        images = images.filter(i => i.id !== id);
-        saveMapfamImages(images);
-        render();
+        removeImage(btn.getAttribute('data-id'));
       });
     });
     gridEl.querySelectorAll('.mapfam-box .card-inner').forEach(box => {
@@ -129,11 +123,33 @@ function initMapfam(config){
         const id = box.getAttribute('data-id');
         const img = images.find(i => i.id === id);
         if(img){
-          zoomImg.src = img.src;
+          zoomImg.src = imgSrc(img);
           zoomOverlay.classList.add('open');
         }
       });
     });
+  }
+
+  function removeImage(id){
+    if(shared){
+      fetch(MAPFAM_UPLOAD_ENDPOINT + '?id=' + encodeURIComponent(id), {
+        method: 'DELETE',
+        headers: mapfamAuthHeaders()
+      })
+        .then(r => r.json())
+        .then(data => {
+          images = data.images || [];
+          render();
+        })
+        .catch(err => {
+          console.error('Mapfam remove failed:', err);
+          alert('Could not remove that image from the server. Try again.');
+        });
+    }else{
+      images = images.filter(i => i.id !== id);
+      saveLocalMapfamImages(images);
+      render();
+    }
   }
 
   fileInput.addEventListener('change', (e) => {
@@ -141,32 +157,31 @@ function initMapfam(config){
     fileInput.value = '';
     if(!file || !unlocked) return;
 
-    function addImage(src){
-      images.push({ id: 'img_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), title: 'Untitled', src: src });
-      const ok = saveMapfamImages(images);
-      if(!ok){
-        alert('This browser\'s local storage is full. Remove some images, or set up a Cloudflare Worker (see the comment at the top of mapfam.js) so images are hosted on R2 instead.');
-        images.pop();
-      }
-      render();
-    }
-
-    if(MAPFAM_UPLOAD_ENDPOINT){
+    if(shared){
       const formData = new FormData();
       formData.append('file', file);
-      fetch(MAPFAM_UPLOAD_ENDPOINT, { method: 'POST', body: formData })
+      fetch(MAPFAM_UPLOAD_ENDPOINT, { method: 'POST', body: formData, headers: mapfamAuthHeaders() })
         .then(r => r.json())
         .then(data => {
-          if(!data || !data.url) throw new Error('No url in response');
-          addImage(data.url);
+          if(!data || !data.images) throw new Error('Unexpected response');
+          images = data.images;
+          render();
         })
         .catch(err => {
           console.error('Mapfam upload failed:', err);
-          alert('Upload to your Worker failed. Check MAPFAM_UPLOAD_ENDPOINT in mapfam.js and your Worker\'s CORS settings, then try again.');
+          alert('Upload to your Worker failed. Check MAPFAM_UPLOAD_ENDPOINT/MAPFAM_UPLOAD_TOKEN in mapfam.js and your Worker\'s CORS settings, then try again.');
         });
     }else{
       const reader = new FileReader();
-      reader.onload = (ev) => addImage(ev.target.result);
+      reader.onload = (ev) => {
+        images.push({ id: 'img_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), src: ev.target.result });
+        const ok = saveLocalMapfamImages(images);
+        if(!ok){
+          alert('This browser\'s local storage is full. Remove some images, or set up a Cloudflare Worker (see the comment at the top of mapfam.js) so images are shared and hosted on R2 instead.');
+          images.pop();
+        }
+        render();
+      };
       reader.readAsDataURL(file);
     }
   });
@@ -198,5 +213,20 @@ function initMapfam(config){
     });
   }
 
-  render();
+  if(shared){
+    gridEl.innerHTML = '<div class="empty-note">Loading images&hellip;</div>';
+    fetch(MAPFAM_UPLOAD_ENDPOINT)
+      .then(r => r.json())
+      .then(data => {
+        images = (data && data.images) || [];
+        render();
+      })
+      .catch(err => {
+        console.error('Mapfam load failed:', err);
+        gridEl.innerHTML = '<div class="empty-note">Could not load images from the server. Check MAPFAM_UPLOAD_ENDPOINT in mapfam.js.</div>';
+        updateLockUI();
+      });
+  }else{
+    render();
+  }
 }

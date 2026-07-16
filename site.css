@@ -86,6 +86,8 @@ h1{
   white-space:nowrap;
 }
 .trader-btn:hover{border-color:var(--hazard);color:var(--hazard);}
+.trader-btn-danger{border-color:var(--danger);color:#f2a89e;}
+.trader-btn-danger:hover{background:var(--danger);border-color:var(--danger);color:#fff;}
 a.trader-btn{display:inline-block;text-decoration:none;}
 
 /* ---- Section header ---- */
@@ -335,11 +337,6 @@ footer{
 }
 
 /* ---- Mapfam gallery ---- */
-.mapfam-note{
-  font-size:11.5px;
-  color:var(--dim);
-  margin-bottom:16px;
-}
 .mapfam-toolbar{
   display:flex;
   gap:10px;
@@ -349,9 +346,8 @@ footer{
 .mapfam-grid{
   display:grid;
   grid-template-columns:repeat(4, 1fr);
-  gap:20px 12px;
+  gap:12px;
 }
-.mapfam-item{display:flex;flex-direction:column;gap:6px;}
 .mapfam-box{
   position:relative;
   background:var(--line);
@@ -392,22 +388,6 @@ footer{
   z-index:1;
 }
 .mapfam-box-remove:hover{background:var(--danger);border-color:var(--danger);color:#fff;}
-.mapfam-title{
-  width:100%;
-  background:var(--panel-2);
-  border:1px solid var(--line);
-  color:var(--paper);
-  font-family:'Barlow', sans-serif;
-  font-size:11.5px;
-  padding:6px 8px;
-}
-.mapfam-title:focus{border-color:var(--gold);outline:none;}
-.mapfam-title-view{
-  font-size:11.5px;
-  color:var(--paper);
-  padding:6px 1px;
-  overflow-wrap:break-word;
-}
 
 @media (max-width: 640px){
   .mapfam-grid{grid-template-columns:repeat(2, 1fr);}
@@ -478,7 +458,6 @@ footer{
   font-weight:700;
   color:var(--tile-border, var(--gold));
 }
-.manage-data-row{margin-top:32px;}
 
 /* ---- Mobile nav menu ---- */
 .mobile-menu-wrap{position:relative;display:none;}
@@ -517,6 +496,8 @@ footer{
   border-bottom:1px solid var(--line);
 }
 .mobile-menu-panel a:hover{background:var(--hazard);color:#1a0900;}
+.mobile-menu-panel a.mobile-menu-danger{color:#f2a89e;}
+.mobile-menu-panel a.mobile-menu-danger:hover{background:var(--danger);color:#fff;}
 
 @media (max-width: 480px){
   .topbar-right > a.trader-btn{display:none;}
