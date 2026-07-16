@@ -12,7 +12,10 @@
 <meta name="twitter:description" content="A quick and easy way to track your camo grind.">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="theme-color" content="#121212">
+<meta name="theme-color" content="#131211">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="preload" href="site.css" as="style">
 <link rel="preload" href="data.js" as="script">
 <link rel="preload" href="site.js" as="script">
@@ -23,67 +26,28 @@
     display:flex;
     align-items:center;
     justify-content:center;
-    padding:24px 24px 110px;
+    padding:24px 24px 130px;
   }
   .hero{
-    max-width:640px;
+    max-width:680px;
     width:100%;
     text-align:center;
   }
-  h1{
-    font-size:clamp(30px, 8vw, 58px);
-    letter-spacing:.06em;
-    margin:0 0 10px;
-  }
-  .sub{
-    font-size:clamp(13px, 3vw, 16px);
-    color:var(--paper-dim);
-    margin:0 0 22px;
-    letter-spacing:.02em;
-  }
-  .badge{
-    display:inline-block;
-    background:var(--panel-2);
-    border:1px solid var(--amber);
-    color:var(--amber);
-    font-size:12px;
-    text-transform:uppercase;
-    letter-spacing:.08em;
-    padding:6px 14px;
-    margin-bottom:18px;
-  }
-  .home-progress{margin-bottom:24px;text-align:left;}
-  .home-progress-label{
-    display:flex;
-    justify-content:space-between;
-    font-size:11px;
-    color:var(--paper-dim);
-    margin-bottom:6px;
-  }
-  .home-progress-track{
-    background:var(--panel-2);
-    border:1px solid var(--line);
-    height:8px;
-  }
-  .home-progress-fill{
-    background:var(--rust);
-    height:100%;
-    width:0%;
-  }
+  .hero h1{font-size:clamp(32px, 8vw, 54px);margin:14px 0 6px;}
+  .hero .sub{font-size:clamp(13px, 3vw, 15px);margin:0 0 26px;}
+  .home-progress{margin-bottom:26px;text-align:left;}
 </style>
 </head>
 <body>
 <div class="hero">
-  <div class="badge">Placeholder data &middot; Black Ops 6 weapons</div>
+  <span class="eyebrow">Placeholder Data &middot; BO6 Weapons</span>
   <h1>MW4 Camo Tracker</h1>
   <div class="sub">A quick and easy way to track your camo grind</div>
 
-  <div class="home-progress" id="homeProgressWrap">
-    <div class="home-progress-label">
-      <span id="homeProgressText">Overall mastery progress: 0 of 0</span>
-      <span id="homeProgressPct">0%</span>
+  <div class="home-progress">
+    <div class="progress-block" style="flex-direction:column;align-items:stretch;gap:12px;">
+      <div class="big-pct" id="homeBigPct" style="text-align:left;">0%<span id="homeBigLabel">All Weapons &middot; Mastered</span></div>
     </div>
-    <div class="home-progress-track"><div class="home-progress-fill" id="homeProgressFill"></div></div>
   </div>
 
   <div class="class-grid" id="classGrid"></div>
@@ -114,12 +78,7 @@ renderClassSummary('classGrid');
   const total = WEAPONS.length;
   const done = WEAPONS.filter(w => isWeaponMastered(w.name, progress)).length;
   const pct = total ? Math.round((done / total) * 100) : 0;
-
-  document.getElementById('homeProgressText').textContent = 'Overall mastery progress: ' + done + ' of ' + total;
-  document.getElementById('homeProgressPct').textContent = pct + '%';
-  const fill = document.getElementById('homeProgressFill');
-  fill.style.width = pct + '%';
-  fill.style.background = pct >= 100 ? '#3cbf2d' : '';
+  document.getElementById('homeBigPct').innerHTML = pct + '%<span>All Weapons &middot; ' + done + ' of ' + total + ' mastered</span>';
 })();
 </script>
 </body>

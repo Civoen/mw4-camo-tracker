@@ -54,7 +54,7 @@ const WEAPONS = [
 // `color` drives both the tier-line progress bar and the checklist styling —
 // update it here (not in CSS) when real tier names/colors are announced.
 const CAMO_TIERS = [
-  { key: 'gold', label: 'Gold', color: 'var(--rust)' },
+  { key: 'gold', label: 'Gold', color: 'var(--gold)' },
   { key: 'platinum', label: 'Platinum', color: '#c9f1f0' },
   { key: 'onyx', label: 'Onyx', color: '#a8a9ab' },
   { key: 'nova', label: 'Nova', color: '#a8a9ab' }

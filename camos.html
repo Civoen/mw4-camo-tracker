@@ -12,7 +12,10 @@
 <meta name="twitter:description" content="Track mastery camo progress across every Modern Warfare 4 weapon.">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta name="theme-color" content="#121212">
+<meta name="theme-color" content="#131211">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="preload" href="site.css" as="style">
 <link rel="preload" href="data.js" as="script">
 <link rel="preload" href="site.js" as="script">
@@ -28,11 +31,9 @@
       <a class="trader-btn" href="import.html">Manage Data</a>
     </div>
   </div>
-  <div class="tab-row">
-    <span class="tab">Mastery Camo &middot; All Weapons</span>
-  </div>
 
   <header>
+    <span class="eyebrow">Placeholder Data &middot; BO6 Weapons</span>
     <h1>Camo Tracker</h1>
   </header>
 
@@ -46,16 +47,12 @@
 
     <div class="class-filter-row" id="classFilter"></div>
 
-    <div class="progress-wrap">
-      <div class="progress-label">
-        <span id="progressText">All Weapons &middot; Gold progress</span>
-        <span id="progressPct">0%</span>
-      </div>
-      <div class="progress-track" id="progressTrack"></div>
-      <div class="tier-legend" id="tierLegend"></div>
+    <div class="progress-block">
+      <div class="big-pct" id="progressBigPct">0%<span>All Weapons &middot; Gold</span></div>
+      <div class="bars" id="progressBars"></div>
     </div>
 
-    <div class="weapon-list" id="weaponList"></div>
+    <div class="weapon-grid" id="weaponList"></div>
     <div class="task-filter-empty" id="taskFilterEmpty">No weapons in this class yet.</div>
   </section>
 

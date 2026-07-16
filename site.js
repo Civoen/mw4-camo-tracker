@@ -265,56 +265,54 @@ function initCamoChecklist(config){
     return activeClass === 'All' ? WEAPONS : WEAPONS.filter(w => w.class === activeClass);
   }
 
-  // The bar shows one line per tier (Gold at the bottom). Each line's width
-  // is the % of weapons in the current scope that hold that tier. Since
-  // higher tiers are gated behind the whole class finishing the tier below,
-  // "all Gold" is what takes the bottom line to 100%.
+  // Big % reflects Gold completion for the current scope (the headline the
+  // design calls out), with a labeled bar-row underneath for every tier so
+  // the breakdown stays legible on narrow screens too.
   function updateProgressBar(){
     const scope = scopedWeapons();
     const total = scope.length;
-    const track = document.getElementById('progressTrack');
-    const legend = document.getElementById('tierLegend');
+    const bigPct = document.getElementById('progressBigPct');
+    const bars = document.getElementById('progressBars');
 
     const tierStats = CAMO_TIERS.map(t => {
       const done = scope.filter(w => (progress[w.name] || {})[t.key]).length;
       return { tier: t, done: done, pct: total ? Math.round((done / total) * 100) : 0 };
     });
 
-    if(track){
-      track.innerHTML = tierStats.map(s =>
-        '<div class="tier-fill-row"><div class="tier-fill-row-inner" style="width:'+s.pct+'%;background:'+s.tier.color+'"></div></div>'
-      ).join('');
-    }
-    if(legend){
-      legend.innerHTML = tierStats.map(s =>
-        '<span class="tier-legend-item"><span class="tier-legend-dot" style="background:'+s.tier.color+'"></span>'+s.tier.label+': '+s.done+'/'+total+'</span>'
-      ).join('');
-    }
-
     const label = activeClass === 'All' ? 'All Weapons' : classLabel(activeClass);
     const goldPct = tierStats[0] ? tierStats[0].pct : 0;
-    document.getElementById('progressText').textContent = label + ' \u00b7 Gold progress';
-    document.getElementById('progressPct').textContent = goldPct + '%';
+    if(bigPct){
+      bigPct.innerHTML = goldPct + '%<span>' + label + ' &middot; Gold</span>';
+    }
+    if(bars){
+      bars.innerHTML = tierStats.map(s =>
+        '<div class="bar-row">' +
+          '<div class="bar-label">' + s.tier.label + '</div>' +
+          '<div class="bar-track"><div class="bar-fill" style="width:' + s.pct + '%;background:' + s.tier.color + ';"></div></div>' +
+          '<div class="bar-count">' + s.done + '/' + total + '</div>' +
+        '</div>'
+      ).join('');
+    }
   }
 
   function renderRow(w){
     const p = progress[w.name] || {};
     const pinned = grindList.includes(w.name);
-    const tiersHtml = CAMO_TIERS.map((t, i) => {
+    const swatchesHtml = CAMO_TIERS.map((t, i) => {
       const unlocked = tierUnlocked(w, i, progress);
       const done = !!p[t.key];
       const locked = !unlocked && !done;
-      return '<label class="tier-check'+(done ? ' tier-done' : '')+(locked ? ' tier-locked' : '')+'">' +
-        '<input type="checkbox" data-name="'+w.name+'" data-tier="'+t.key+'"'+(done ? ' checked' : '')+(locked ? ' disabled' : '')+'>' +
-        t.label +
+      const chipStyle = done ? 'background:' + t.color + ';border-color:transparent;' : (locked ? '' : 'border-color:' + t.color + ';');
+      return '<label class="tier-swatch'+(done ? ' tier-done' : '')+(locked ? ' tier-locked' : '')+'">' +
+        '<input class="sr-only" type="checkbox" data-name="'+w.name+'" data-tier="'+t.key+'"'+(done ? ' checked' : '')+(locked ? ' disabled' : '')+'>' +
+        '<span class="swatch-chip'+(locked ? ' locked' : '')+'" style="'+chipStyle+'"></span>' +
+        '<span class="swatch-label">'+t.label+'</span>' +
       '</label>';
     }).join('');
-    return '<div class="weapon-row'+(isWeaponMastered(w.name, progress) ? ' done' : '')+(pinned ? ' pinned' : '')+'" data-name="'+w.name+'" data-class="'+w.class+'">' +
-      '<div class="weapon-head">' +
-        '<span><span class="weapon-name">'+w.name+'</span><br><span class="weapon-class">'+w.class+'</span></span>' +
-        (pinned ? '<span class="weapon-pinned-badge">Pinned</span>' : '') +
-      '</div>' +
-      '<div class="tier-row">'+tiersHtml+'</div>' +
+    return '<div class="weapon-card'+(isWeaponMastered(w.name, progress) ? ' mastered' : '')+(pinned ? ' pinned' : '')+'" data-name="'+w.name+'" data-class="'+w.class+'">' +
+      '<div class="weapon-name">'+w.name+'</div>' +
+      '<div class="weapon-class">'+w.class+'</div>' +
+      '<div class="swatch-row">'+swatchesHtml+'</div>' +
     '</div>';
   }
 
@@ -329,8 +327,8 @@ function initCamoChecklist(config){
   }
 
   function bindRowEvents(){
-    // Tier checkboxes: change progress, don't trigger the row's pin click.
-    listEl.querySelectorAll('.tier-check input').forEach(box => {
+    // Tier swatches: change progress, don't trigger the card's pin click.
+    listEl.querySelectorAll('.tier-swatch input').forEach(box => {
       box.addEventListener('change', () => {
         const name = box.getAttribute('data-name');
         const tier = box.getAttribute('data-tier');
@@ -347,14 +345,14 @@ function initCamoChecklist(config){
         render();
       });
     });
-    listEl.querySelectorAll('.tier-check').forEach(label => {
+    listEl.querySelectorAll('.tier-swatch').forEach(label => {
       label.addEventListener('click', (e) => e.stopPropagation());
     });
 
-    // Clicking anywhere else on a weapon's box pins/unpins it.
-    listEl.querySelectorAll('.weapon-row').forEach(row => {
-      row.addEventListener('click', () => {
-        togglePin(row.getAttribute('data-name'));
+    // Clicking anywhere else on a weapon's card pins/unpins it.
+    listEl.querySelectorAll('.weapon-card').forEach(card => {
+      card.addEventListener('click', () => {
+        togglePin(card.getAttribute('data-name'));
         render();
       });
     });
