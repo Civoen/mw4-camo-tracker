@@ -19,7 +19,7 @@
 //   - Uploads POST to /api/mapfam, which stores the file in R2, updates
 //     the shared list, and every visitor sees the new image on their next
 //     page load.
-const MAPFAM_SHARED_MODE = true;
+const MAPFAM_SHARED_MODE = false;
 const MAPFAM_UPLOAD_ENDPOINT = '/api/mapfam'; // same-origin, no CORS setup needed
 
 // If you set an UPLOAD_TOKEN secret on the Worker (see setup guide), put
