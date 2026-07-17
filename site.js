@@ -20,6 +20,16 @@ function isWeaponMastered(name, progress){
   return CAMO_TIERS.every(t => p[t.key]);
 }
 
+// The color of the highest tier THIS weapon has earned so far (gold as
+// soon as Gold is checked, moving up through platinum/onyx/nova as it
+// progresses). Returns null if nothing's been earned yet.
+function highestOwnTierColor(name, progress){
+  const p = progress[name] || {};
+  let color = null;
+  CAMO_TIERS.forEach(t => { if(p[t.key]) color = t.color; });
+  return color;
+}
+
 // True once every weapon in `weaponsArr` has tier `tierKey` checked.
 function tierCompleteForWeapons(weaponsArr, tierKey, progress){
   return weaponsArr.length > 0 && weaponsArr.every(w => (progress[w.name] || {})[tierKey]);
@@ -438,6 +448,15 @@ function initCamoChecklist(config){
         '</div>'
       ).join('');
     }
+
+    // Progress block's own outline: gold once the whole scope has Gold,
+    // then platinum, onyx, nova as each tier gets fully completed.
+    const progressBlock = document.getElementById('progressBlock');
+    if(progressBlock){
+      const outlineColor = highestCompleteTierColor(scope, progress);
+      if(outlineColor) progressBlock.style.setProperty('--tier-border', outlineColor);
+      else progressBlock.style.removeProperty('--tier-border');
+    }
   }
 
   function renderRow(w){
@@ -454,7 +473,9 @@ function initCamoChecklist(config){
         '<span class="swatch-label">'+t.label+'</span>' +
       '</label>';
     }).join('');
-    return '<div class="weapon-card'+(isWeaponMastered(w.name, progress) ? ' mastered' : '')+(pinned ? ' pinned' : '')+'" data-name="'+w.name+'" data-class="'+w.class+'">' +
+    const cardColor = highestOwnTierColor(w.name, progress);
+    const cardStyle = cardColor ? ' style="--card-border:' + cardColor + '"' : '';
+    return '<div class="weapon-card'+(pinned ? ' pinned' : '')+'" data-name="'+w.name+'" data-class="'+w.class+'"'+cardStyle+'>' +
       '<div class="card-inner">' +
         '<div class="weapon-name">'+w.name+'</div>' +
         '<div class="weapon-class">'+w.class+'</div>' +
@@ -471,6 +492,7 @@ function initCamoChecklist(config){
     bindRowEvents();
     updateProgressBar();
     updateFilterEmpty();
+    renderClassFilterButtons();
   }
 
   function bindRowEvents(){
@@ -512,15 +534,31 @@ function initCamoChecklist(config){
   }
 
   const classFilterEl = config.classFilterId ? document.getElementById(config.classFilterId) : null;
+
+  // Builds/refreshes the class filter pills. Each button's border reflects
+  // the highest tier that class has FULLY completed (every weapon in it),
+  // and flips to a solid gold fill with dark text once that class hits
+  // 100% (every weapon at Nova) — same treatment as the homepage tiles.
+  function renderClassFilterButtons(){
+    if(!classFilterEl) return;
+    classFilterEl.innerHTML = ['All', ...WEAPON_CLASSES].map(c => {
+      const weaponsInScope = c === 'All' ? WEAPONS : WEAPONS.filter(w => w.class === c);
+      const maxed = weaponsInScope.length > 0 && weaponsInScope.every(w => isWeaponMastered(w.name, progress));
+      const color = highestCompleteTierColor(weaponsInScope, progress);
+      const styleAttr = (!maxed && color) ? ' style="--tier-border:' + color + '"' : '';
+      const classes = 'class-filter-btn'
+        + (c === activeClass ? ' active' : '')
+        + (maxed ? ' maxed' : '');
+      return '<button class="'+classes+'" data-class="'+c+'" type="button"'+styleAttr+'>'+(c === 'All' ? 'All' : classLabel(c))+'</button>';
+    }).join('');
+  }
+
   if(classFilterEl){
-    classFilterEl.innerHTML = ['All', ...WEAPON_CLASSES].map(c =>
-      '<button class="class-filter-btn'+(c === activeClass ? ' active' : '')+'" data-class="'+c+'" type="button">'+(c === 'All' ? 'All' : classLabel(c))+'</button>'
-    ).join('');
+    renderClassFilterButtons();
     classFilterEl.addEventListener('click', (e) => {
       const btn = e.target.closest('.class-filter-btn');
       if(!btn) return;
       activeClass = btn.getAttribute('data-class');
-      classFilterEl.querySelectorAll('.class-filter-btn').forEach(b => b.classList.toggle('active', b === btn));
       render();
     });
   }

@@ -132,7 +132,7 @@ footer{
 }
 .class-filter-btn{
   background:var(--panel-2);
-  border:1px solid var(--line);
+  border:1px solid var(--tier-border, var(--line));
   color:var(--dim);
   font-family:'Barlow', sans-serif;
   font-weight:700;
@@ -144,11 +144,13 @@ footer{
 }
 .class-filter-btn:hover{border-color:var(--hazard);}
 .class-filter-btn.active{background:var(--hazard);border-color:var(--hazard);color:#1a0900;}
+.class-filter-btn.maxed{background:var(--gold);border-color:var(--gold);color:var(--bg);}
+.class-filter-btn.maxed:hover{border-color:var(--gold);}
 
 /* ---- Progress block ---- */
 .progress-block{
   background:var(--panel);
-  border:1px solid var(--line);
+  border:1px solid var(--tier-border, var(--line));
   padding:20px 22px;
   margin-bottom:30px;
   display:flex;
@@ -218,13 +220,12 @@ footer{
 }
 .weapon-card{
   position:relative;
-  background:var(--line);
+  background:var(--card-border, var(--line));
   padding:1px;
   cursor:pointer;
   clip-path:polygon(0 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%);
 }
 .weapon-card:hover{background:var(--hazard);}
-.weapon-card.mastered{background:var(--gold);}
 .weapon-card .card-inner{
   display:block;
   height:100%;
