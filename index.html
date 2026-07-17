@@ -38,10 +38,13 @@
   }
   .hero h1{font-size:clamp(32px, 8vw, 54px);margin:14px 0 6px;}
   .mw4-glyph{
-    height:0.78em;
+    height:1.65em;
     width:auto;
-    vertical-align:-0.06em;
-    margin:0 0.02em;
+    vertical-align:-0.42em;
+    margin-left:-0.55em;
+    margin-right:-0.08em;
+    position:relative;
+    z-index:1;
   }
   .hero .sub{font-size:clamp(13px, 3vw, 15px);margin:0 0 26px;}
   .home-progress{margin-bottom:26px;text-align:left;}
@@ -94,12 +97,26 @@ renderClassSummary('classGrid');
   // mastered weapons) so a single Gold pickup moves this bar.
   const totalPossible = WEAPONS.length * CAMO_TIERS.length;
   let earned = 0;
+  const tierDone = CAMO_TIERS.map(() => 0);
   WEAPONS.forEach(w => {
     const p = progress[w.name] || {};
-    CAMO_TIERS.forEach(t => { if(p[t.key]) earned++; });
+    CAMO_TIERS.forEach((t, i) => { if(p[t.key]){ earned++; tierDone[i]++; } });
   });
   const pct = totalPossible ? Math.round((earned / totalPossible) * 100) : 0;
-  document.getElementById('homeBigPct').innerHTML = pct + '%<span>Overall Progress &middot; ' + earned + ' of ' + totalPossible + ' camos earned</span>';
+
+  // Same "highest tier anyone has started" color cycling as the Camo
+  // Tracker page, just scoped across every weapon class instead of one.
+  let activeColor = CAMO_TIERS[0].color;
+  for(let i = CAMO_TIERS.length - 1; i >= 0; i--){
+    if(tierDone[i] > 0){ activeColor = CAMO_TIERS[i].color; break; }
+  }
+
+  const homeBigPct = document.getElementById('homeBigPct');
+  const homeProgressLink = document.querySelector('.progress-block-link');
+  const isMaxed = pct === 100;
+  homeBigPct.innerHTML = pct + '%<span>Overall Progress &middot; ' + earned + ' of ' + totalPossible + ' camos earned</span>';
+  homeBigPct.style.color = isMaxed ? '' : activeColor; // let the .maxed CSS rule take over at 100%
+  if(homeProgressLink) homeProgressLink.classList.toggle('maxed', isMaxed);
 })();
 </script>
 </body>

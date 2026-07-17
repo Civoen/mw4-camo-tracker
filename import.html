@@ -18,7 +18,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="preload" href="fonts/StackSansHeadline-Bold.ttf" as="font" type="font/ttf" crossorigin>
 <link rel="preload" href="site.css" as="style">
+<link rel="preload" href="data.js" as="script">
 <link rel="stylesheet" href="site.css">
+<script src="data.js"></script>
 <style>
   body{
     min-height:100vh;
@@ -79,6 +81,35 @@
   }
   .reset-btn:hover{background:var(--danger);color:#fff;}
   .reset-btn.confirming{background:var(--danger);color:#fff;}
+  .test-section{
+    margin-top:28px;
+    padding:14px;
+    border:1px dashed var(--danger);
+    background:var(--panel-2);
+  }
+  .test-label{
+    font-size:10px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    color:var(--danger);
+    margin-bottom:10px;
+  }
+  .test-btn{
+    display:block;
+    width:100%;
+    background:none;
+    border:1px solid var(--danger);
+    color:var(--danger);
+    font-family:'Barlow', sans-serif;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.03em;
+    font-size:12px;
+    padding:11px 16px;
+    cursor:pointer;
+  }
+  .test-btn:hover{background:var(--danger);color:#fff;}
   .status{
     font-size:12px;
     padding:10px 14px;
@@ -118,6 +149,11 @@
   <button class="export-btn" id="exportBtn" type="button">Export</button>
 
   <button class="reset-btn" id="resetBtn" type="button">Reset Progress</button>
+
+  <div class="test-section">
+    <div class="test-label">Testing Only &middot; Will Be Removed</div>
+    <button class="test-btn" id="testMaxBtn" type="button">Set All Weapons to 100% (Nova)</button>
+  </div>
 
   <a class="home-link" href="index.html">&larr; Back to Homepage</a>
 </div>
@@ -234,6 +270,29 @@ resetBtn.addEventListener('click', () => {
   resetBtn.textContent = 'Reset Progress';
   showStatus('Progress reset. Camo tiers, the Grind List, and recent activity have been cleared.', 'success');
 });
+
+// ---- TEMPORARY: testing-only button to instantly max every weapon ----
+// Sets every weapon to full Nova (all 4 tiers), pushing every percentage
+// on the site to 100%. Not meant to ship — remove this button, its CSS
+// (.test-section/.test-label/.test-btn), and this handler when done testing.
+const testMaxBtn = document.getElementById('testMaxBtn');
+if(testMaxBtn){
+  testMaxBtn.addEventListener('click', () => {
+    if(!confirm('Set every weapon to 100% (Nova)? This overwrites your current progress.')) return;
+    const progress = {};
+    WEAPONS.forEach(w => {
+      const tiers = {};
+      CAMO_TIERS.forEach(t => { tiers[t.key] = true; });
+      progress[w.name] = tiers;
+    });
+    try{
+      localStorage.setItem('mw4camo-progress', JSON.stringify(progress));
+      showStatus('All ' + WEAPONS.length + ' weapons set to 100% (Nova). Visit any page to see it reflected.', 'success');
+    }catch(e){
+      showStatus('Could not save — this browser\'s local storage may be full.', 'error');
+    }
+  });
+}
 </script>
 </body>
 </html>

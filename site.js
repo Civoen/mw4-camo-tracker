@@ -120,13 +120,16 @@ function formatRelativeTime(ts){
 }
 
 // Renders the recent-activity feed on recent.html.
+// Renders the recent-activity feed on recent.html. Rows are clickable
+// (jump to that weapon's class on the Camo Tracker page); each has its own
+// remove button, plus a page-level "Clear All" wired up separately.
 function renderRecentList(containerId){
   const el = document.getElementById(containerId);
   if(!el) return;
   const log = loadRecentLog();
   el.innerHTML = log.length
-    ? log.map(entry =>
-        '<div class="recent-row">' +
+    ? log.map((entry, i) =>
+        '<div class="recent-row" data-index="'+i+'" data-class="'+entry.class+'" role="button" tabindex="0">' +
           '<span class="recent-dot" style="background:'+(CAMO_TIERS.find(t => t.key === entry.tierKey) || {}).color+'"></span>' +
           '<span class="recent-main">' +
             '<span class="recent-weapon">'+entry.name+'</span>' +
@@ -134,9 +137,40 @@ function renderRecentList(containerId){
           '</span>' +
           '<span class="recent-tier">'+entry.tierLabel+'</span>' +
           '<span class="recent-time">'+formatRelativeTime(entry.ts)+'</span>' +
+          '<button class="recent-remove" data-index="'+i+'" type="button" aria-label="Remove entry">&times;</button>' +
         '</div>'
       ).join('')
     : '<div class="empty-note">No camo activity yet. Check off a tier on the Camo Tracker page to see it here.</div>';
+
+  el.querySelectorAll('.recent-remove').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const log = loadRecentLog();
+      log.splice(parseInt(btn.getAttribute('data-index'), 10), 1);
+      saveRecentLog(log);
+      renderRecentList(containerId);
+    });
+  });
+  el.querySelectorAll('.recent-row').forEach(row => {
+    row.addEventListener('click', () => {
+      window.location.href = 'camos.html?class=' + encodeURIComponent(row.getAttribute('data-class'));
+    });
+    row.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); row.click(); }
+    });
+  });
+}
+
+// Wires up the "Clear All" button on recent.html.
+function initRecentClearAll(buttonId, listContainerId){
+  const btn = document.getElementById(buttonId);
+  if(!btn) return;
+  btn.addEventListener('click', () => {
+    if(!loadRecentLog().length) return;
+    if(!confirm('Clear all recent activity? This can\'t be undone.')) return;
+    saveRecentLog([]);
+    renderRecentList(listContainerId);
+  });
 }
 
 // ---- Grind List (pinned weapons currently being worked on) ----
@@ -324,9 +358,10 @@ function renderClassSummary(containerId){
   const progress = loadCamoProgress();
 
   function tile(label, count, total, href, weaponsInScope){
+    const maxed = total > 0 && count === total;
     const color = highestCompleteTierColor(weaponsInScope, progress);
-    const styleAttr = color ? ' style="--tile-border:' + color + '"' : '';
-    return '<a class="class-tile" href="'+href+'"'+styleAttr+'>' +
+    const styleAttr = (!maxed && color) ? ' style="--tile-border:' + color + '"' : '';
+    return '<a class="class-tile'+(maxed ? ' maxed' : '')+'" href="'+href+'"'+styleAttr+'>' +
       '<span class="card-inner">' +
         '<span class="class-tile-name">'+label+'</span>' +
         '<span class="class-tile-count">'+count+'/'+total+'</span>' +
@@ -375,9 +410,24 @@ function initCamoChecklist(config){
     });
 
     const label = activeClass === 'All' ? 'All Weapons' : classLabel(activeClass);
-    const goldPct = tierStats[0] ? tierStats[0].pct : 0;
+
+    // Overall completion: 100% only once every weapon in scope has every
+    // tier (Nova) — not just Gold, which was the old (incorrect) behavior.
+    const totalPossible = total * CAMO_TIERS.length;
+    const totalEarned = tierStats.reduce((sum, s) => sum + s.done, 0);
+    const overallPct = totalPossible ? Math.round((totalEarned / totalPossible) * 100) : 0;
+
+    // The headline number's color tracks the highest tier anyone in this
+    // scope has started earning — gold by default, then platinum, onyx,
+    // and finally nova as soon as any weapon reaches each stage.
+    let activeColor = CAMO_TIERS[0].color;
+    for(let i = CAMO_TIERS.length - 1; i >= 0; i--){
+      if(tierStats[i].done > 0){ activeColor = CAMO_TIERS[i].color; break; }
+    }
+
     if(bigPct){
-      bigPct.innerHTML = goldPct + '%<span>' + label + ' &middot; Gold</span>';
+      bigPct.innerHTML = overallPct + '%<span>' + label + ' &middot; Overall</span>';
+      bigPct.style.color = activeColor;
     }
     if(bars){
       bars.innerHTML = tierStats.map(s =>

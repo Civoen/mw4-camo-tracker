@@ -40,10 +40,13 @@
   </header>
 
   <section>
+    <div class="page-toolbar">
+      <button class="trader-btn trader-btn-danger" id="recentClearAll" type="button">Clear All</button>
+    </div>
     <div class="recent-list" id="recentList"></div>
   </section>
 
-  <footer>Every tier you check off on the Camo Tracker page (or advance via Next Camo) shows up here, most recent first.</footer>
+  <footer>Every tier you check off on the Camo Tracker page (or advance via Next Camo) shows up here, most recent first. Click a row to jump to that weapon's class.</footer>
 </div>
 
 <div class="grind-list" id="grindList">
@@ -61,6 +64,7 @@
 <script src="site.js"></script>
 <script>
 renderRecentList('recentList');
+initRecentClearAll('recentClearAll', 'recentList');
 </script>
 </body>
 </html>
