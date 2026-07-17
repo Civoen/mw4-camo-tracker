@@ -42,6 +42,27 @@ function classTierComplete(cls, tierKey, progress){
   return tierCompleteForWeapons(WEAPONS.filter(w => w.class === cls), tierKey, progress);
 }
 
+// Re-validates an entire class's progress after a tier gets unchecked.
+// Unchecking Gold on one weapon means Platinum was never legitimately
+// attainable for the whole class (every weapon needs Gold first) — so any
+// weapon in the class already holding Platinum or higher has it stripped
+// too. This cascades tier by tier: if that strip also breaks Platinum's
+// class-wide completeness, Onyx gets stripped next, and so on up to Nova.
+function enforceClassGating(cls, progress){
+  const weapons = WEAPONS.filter(w => w.class === cls);
+  for(let i = 1; i < CAMO_TIERS.length; i++){
+    const prevKey = CAMO_TIERS[i - 1].key;
+    if(!tierCompleteForWeapons(weapons, prevKey, progress)){
+      for(let j = i; j < CAMO_TIERS.length; j++){
+        const key = CAMO_TIERS[j].key;
+        weapons.forEach(w => {
+          if(progress[w.name]) progress[w.name][key] = false;
+        });
+      }
+    }
+  }
+}
+
 // The color of the highest tier that's fully complete across every weapon
 // in `weaponsArr` (used to recolor a class tile once, say, all Gold is in).
 // Returns null if not even the first tier is fully complete yet.
@@ -508,6 +529,10 @@ function initCamoChecklist(config){
         if(!box.checked){
           const idx = CAMO_TIERS.findIndex(t => t.key === tier);
           CAMO_TIERS.slice(idx + 1).forEach(t => { progress[name][t.key] = false; });
+          // It can also invalidate tiers already earned on OTHER weapons in
+          // the same class, since higher tiers require every weapon to have
+          // cleared the one below first.
+          enforceClassGating(weaponLookup(name).class, progress);
         }
         saveCamoProgress(progress);
         if(box.checked) logCamoChange(name, tier);
@@ -536,19 +561,16 @@ function initCamoChecklist(config){
   const classFilterEl = config.classFilterId ? document.getElementById(config.classFilterId) : null;
 
   // Builds/refreshes the class filter pills. Each button's border reflects
-  // the highest tier that class has FULLY completed (every weapon in it),
-  // and flips to a solid gold fill with dark text once that class hits
-  // 100% (every weapon at Nova) — same treatment as the homepage tiles.
+  // the highest tier that class has FULLY completed (every weapon in it) —
+  // at 100% that's Nova, whose color is white, so the outline naturally
+  // goes white with no special-casing needed.
   function renderClassFilterButtons(){
     if(!classFilterEl) return;
     classFilterEl.innerHTML = ['All', ...WEAPON_CLASSES].map(c => {
       const weaponsInScope = c === 'All' ? WEAPONS : WEAPONS.filter(w => w.class === c);
-      const maxed = weaponsInScope.length > 0 && weaponsInScope.every(w => isWeaponMastered(w.name, progress));
       const color = highestCompleteTierColor(weaponsInScope, progress);
-      const styleAttr = (!maxed && color) ? ' style="--tier-border:' + color + '"' : '';
-      const classes = 'class-filter-btn'
-        + (c === activeClass ? ' active' : '')
-        + (maxed ? ' maxed' : '');
+      const styleAttr = color ? ' style="--tier-border:' + color + '"' : '';
+      const classes = 'class-filter-btn' + (c === activeClass ? ' active' : '');
       return '<button class="'+classes+'" data-class="'+c+'" type="button"'+styleAttr+'>'+(c === 'All' ? 'All' : classLabel(c))+'</button>';
     }).join('');
   }

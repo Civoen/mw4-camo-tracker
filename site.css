@@ -144,8 +144,6 @@ footer{
 }
 .class-filter-btn:hover{border-color:var(--hazard);}
 .class-filter-btn.active{background:var(--hazard);border-color:var(--hazard);color:#1a0900;}
-.class-filter-btn.maxed{background:var(--gold);border-color:var(--gold);color:var(--bg);}
-.class-filter-btn.maxed:hover{border-color:var(--gold);}
 
 /* ---- Progress block ---- */
 .progress-block{
