@@ -7,8 +7,8 @@
 // else visiting the site sees them, and there's no way around that without
 // a server: a static site has nowhere shared to keep a list of images.
 //
-// To make uploads visible to every visitor, this site's own Worker (see
-// worker.js at the repo root) already has an /api/mapfam route that stores
+// To make uploads visible to every visitor, this site's Pages Function (see
+// functions/api/mapfam.js) already handles an /api/mapfam route that stores
 // images in R2 and keeps a shared manifest of what's been uploaded — you
 // just need to point Cloudflare at a real R2 bucket for it (see the setup
 // guide: create the bucket, add the binding, add the public URL variable,
@@ -22,7 +22,7 @@
 const MAPFAM_SHARED_MODE = false;
 const MAPFAM_UPLOAD_ENDPOINT = '/api/mapfam'; // same-origin, no CORS setup needed
 
-// If you set an UPLOAD_TOKEN secret on the Worker (see setup guide), put
+// If you set an UPLOAD_TOKEN variable on the Pages project (see setup guide), put
 // the same value here so uploads/removals are authorized. Leave blank if
 // you haven't set one up.
 const MAPFAM_UPLOAD_TOKEN = '';
@@ -173,7 +173,7 @@ function initMapfam(config){
         })
         .catch(err => {
           console.error('Mapfam upload failed:', err);
-          alert('Upload failed. Check that the R2 bucket binding and MAPFAM_PUBLIC_BASE_URL variable are set on this Worker in the Cloudflare dashboard, then try again.');
+          alert('Upload failed. Check that the R2 bucket binding and MAPFAM_PUBLIC_BASE_URL variable are set on this Pages project in the Cloudflare dashboard, then try again.');
         });
     }else{
       const reader = new FileReader();
@@ -181,7 +181,7 @@ function initMapfam(config){
         images.push({ id: 'img_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7), src: ev.target.result });
         const ok = saveLocalMapfamImages(images);
         if(!ok){
-          alert('This browser\'s local storage is full. Remove some images, or set up a Cloudflare Worker (see the comment at the top of mapfam.js) so images are shared and hosted on R2 instead.');
+          alert('This browser\'s local storage is full. Remove some images, or set up the Pages Function (see the comment at the top of mapfam.js) so images are shared and hosted on R2 instead.');
           images.pop();
         }
         render();
@@ -227,7 +227,7 @@ function initMapfam(config){
       })
       .catch(err => {
         console.error('Mapfam load failed:', err);
-        gridEl.innerHTML = '<div class="empty-note">Could not load images from the server. Check the R2 bucket binding on this Worker in the Cloudflare dashboard.</div>';
+        gridEl.innerHTML = '<div class="empty-note">Could not load images from the server. Check the R2 bucket binding on this Pages project in the Cloudflare dashboard.</div>';
         updateLockUI();
       });
   }else{
