@@ -21,7 +21,7 @@
 body{
   margin:0;
   background:
-    repeating-linear-gradient(115deg, rgba(255,90,31,0.035) 0px, rgba(255,90,31,0.035) 2px, transparent 2px, transparent 26px),
+    repeating-linear-gradient(115deg, rgba(254,207,65,0.035) 0px, rgba(254,207,65,0.035) 2px, transparent 2px, transparent 26px),
     var(--bg);
   color:var(--paper);
   font-family:'Barlow', 'DejaVu Sans', 'Liberation Sans', sans-serif;
