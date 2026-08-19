@@ -50,7 +50,7 @@ function pcDrawDiagonalPattern(ctx, w, h){
   const step = 26;
   const diag = Math.sqrt(w * w + h * h);
   ctx.translate(w / 2, h / 2);
-  ctx.rotate(25 * Math.PI / 180); // matches the site's 115deg CSS gradient angle
+  ctx.rotate(45 * Math.PI / 180); // matches the site's 135deg CSS gradient angle
   for(let x = -diag; x < diag; x += step){
     ctx.beginPath();
     ctx.moveTo(x, -diag);

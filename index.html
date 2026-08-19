@@ -27,7 +27,7 @@
     display:flex;
     flex-direction:column;
     align-items:center;
-    padding:24px clamp(16px, 4vw, 56px) 130px;
+    padding:32px clamp(16px, 4vw, 56px) 130px;
   }
   .topbar{width:100%;}
   .hero{
@@ -73,14 +73,20 @@
   </div>
 
   <div class="class-grid" id="classGrid"></div>
+
+  <div class="page-toolbar" style="justify-content:center;margin-top:24px;margin-bottom:0;">
+    <button class="trader-btn" id="downloadProgressCard" type="button">Download Progress Card</button>
+  </div>
 </div>
 
 <div class="grind-list" id="grindList">
   <div class="grind-list-bar">
     <div class="grind-list-toggle" id="grindListToggle" role="button" tabindex="0">
       <span>Currently Grinding</span>
-      <button class="grind-list-fullscreen" id="grindListFullscreen" type="button">Full Screen</button>
-      <span class="grind-list-count" id="grindListCount">0</span>
+      <span class="grind-list-actions">
+        <button class="grind-list-fullscreen" id="grindListFullscreen" type="button">Full Screen</button>
+        <span class="grind-list-count" id="grindListCount">0</span>
+      </span>
     </div>
   </div>
   <div class="grind-list-panel" id="grindListPanel"></div>
@@ -88,8 +94,10 @@
 
 <script src="data.js"></script>
 <script src="site.js"></script>
+<script src="progress-card.js"></script>
 <script>
 renderClassSummary('classGrid');
+initProgressCardButton('downloadProgressCard');
 
 (function(){
   const progress = loadCamoProgress();

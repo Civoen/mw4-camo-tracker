@@ -21,7 +21,7 @@
 body{
   margin:0;
   background:
-    repeating-linear-gradient(115deg, rgba(254,207,65,0.035) 0px, rgba(254,207,65,0.035) 2px, transparent 2px, transparent 26px),
+    repeating-linear-gradient(135deg, rgba(254,207,65,0.035) 0px, rgba(254,207,65,0.035) 2px, transparent 2px, transparent 26px),
     var(--bg);
   color:var(--paper);
   font-family:'Barlow', 'DejaVu Sans', 'Liberation Sans', sans-serif;
@@ -589,15 +589,20 @@ footer{
 /* ---- Currently Grinding (Grind List) ---- */
 .grind-list{
   position:fixed;
-  bottom:0;
-  left:50%;
-  transform:translateX(-50%);
-  width:min(680px, calc(100% - 32px));
+  bottom:24px;
+  right:24px;
+  width:340px;
+  max-width:calc(100vw - 48px);
   z-index:40;
   font-family:'Barlow', sans-serif;
 }
 .grind-list.fullscreen{
   top:0;
+  bottom:0;
+  left:0;
+  right:0;
+  width:auto;
+  max-width:none;
 }
 /* Full Screen takes over the whole viewport — hide the page's own content
    behind it rather than leaving it visible around/behind the panel. */
@@ -608,14 +613,20 @@ body.grindlist-fullscreen > .hero{
 .grind-list-bar{
   width:100%;
   background:var(--panel);
-  border-top:3px solid var(--gold);
-  border-left:1px solid var(--line);
-  border-right:1px solid var(--line);
+  border:1px solid var(--gold);
   padding:10px 16px;
   display:flex;
   align-items:center;
   gap:10px;
   flex-wrap:wrap;
+  cursor:pointer;
+}
+.grind-list.fullscreen .grind-list-bar{
+  border:none;
+  border-top:3px solid var(--gold);
+  border-left:1px solid var(--line);
+  border-right:1px solid var(--line);
+  cursor:default;
 }
 .grind-list-toggle{
   flex:1;
@@ -630,17 +641,23 @@ body.grindlist-fullscreen > .hero{
   align-items:center;
   gap:10px;
 }
+.grind-list-actions{
+  margin-left:auto;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
 .grind-list-count{
   background:var(--gold);
   color:#1a1200;
   font-weight:700;
   padding:2px 9px;
   font-size:11px;
-  margin-left:auto;
   cursor:pointer;
 }
 .grind-list-count:hover{background:var(--danger);color:#fff;}
 .grind-list-fullscreen{
+  display:none;
   background:none;
   border:1px solid var(--line);
   color:var(--paper);
@@ -652,16 +669,21 @@ body.grindlist-fullscreen > .hero{
   padding:6px 12px;
   cursor:pointer;
 }
+.grind-list.open .grind-list-fullscreen,
+.grind-list.fullscreen .grind-list-fullscreen{display:inline-block;}
 .grind-list-fullscreen:hover{border-color:var(--gold);color:var(--gold);}
-.grind-list.fullscreen .grind-list-panel{max-height:none;}
-.grind-list.fullscreen .grind-list-fullscreen{border-color:var(--danger);color:#f2a89e;}
-.grind-list.fullscreen .grind-list-fullscreen:hover{background:var(--danger);color:#fff;}
+.grind-list.fullscreen .grind-list-panel{max-height:none;height:auto;}
 .grind-list-panel{
   display:none;
-  max-height:45vh;
+  width:100%;
+  height:340px;
+  max-height:calc(100vh - 160px);
   overflow-y:auto;
   background:var(--bg);
-  border-top:1px solid var(--line);
+  border:1px solid var(--line);
+  border-top:none;
+}
+.grind-list.fullscreen .grind-list-panel{
   border-left:1px solid var(--line);
   border-right:1px solid var(--line);
 }

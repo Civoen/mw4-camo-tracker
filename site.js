@@ -351,10 +351,11 @@ if(grindListEl){
       if(active){
         grindListEl.classList.add('open');
       }else{
-        grindListEl.classList.remove('open', 'fs-lg', 'fs-md', 'fs-sm');
+        // Minimise returns to the square popup (still open), not fully closed.
+        grindListEl.classList.remove('fs-lg', 'fs-md', 'fs-sm');
         grindListPanel.style.height = '';
       }
-      grindListFullscreen.textContent = active ? 'Exit Full Screen' : 'Full Screen';
+      grindListFullscreen.textContent = active ? 'Minimise' : 'Full Screen';
       renderGrindList();
     });
   }
