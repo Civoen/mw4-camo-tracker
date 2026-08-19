@@ -18,6 +18,22 @@
   --danger:#e0362b;
 }
 *{box-sizing:border-box;}
+html{
+  scrollbar-width:thin;
+  scrollbar-color:var(--line) var(--bg);
+}
+html::-webkit-scrollbar{
+  width:10px;
+}
+html::-webkit-scrollbar-track{
+  background:var(--bg);
+}
+html::-webkit-scrollbar-thumb{
+  background:var(--line);
+}
+html::-webkit-scrollbar-thumb:hover{
+  background:var(--gold);
+}
 body{
   margin:0;
   background:
@@ -673,6 +689,27 @@ body.grindlist-fullscreen > .hero{
 .grind-list.fullscreen .grind-list-fullscreen{display:inline-block;}
 .grind-list-fullscreen:hover{border-color:var(--gold);color:var(--gold);}
 .grind-list.fullscreen .grind-list-panel{max-height:none;height:auto;}
+.grind-list-panel,
+.mobile-menu-panel{
+  scrollbar-width:thin;
+  scrollbar-color:var(--line) var(--panel);
+}
+.grind-list-panel::-webkit-scrollbar,
+.mobile-menu-panel::-webkit-scrollbar{
+  width:8px;
+}
+.grind-list-panel::-webkit-scrollbar-track,
+.mobile-menu-panel::-webkit-scrollbar-track{
+  background:var(--panel);
+}
+.grind-list-panel::-webkit-scrollbar-thumb,
+.mobile-menu-panel::-webkit-scrollbar-thumb{
+  background:var(--line);
+}
+.grind-list-panel::-webkit-scrollbar-thumb:hover,
+.mobile-menu-panel::-webkit-scrollbar-thumb:hover{
+  background:var(--gold);
+}
 .grind-list-panel{
   display:none;
   width:100%;
