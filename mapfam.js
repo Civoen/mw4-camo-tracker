@@ -109,7 +109,7 @@ function initMapfam(config){
   function renderItem(img){
     return '<div class="mapfam-box" data-id="'+img.id+'">' +
       '<div class="card-inner" data-id="'+img.id+'">' +
-        '<img src="'+imgSrc(img)+'" alt="Uploaded map image">' +
+        '<img src="'+imgSrc(img)+'" alt="Uploaded map image" loading="lazy">' +
         (unlocked ? '<button class="mapfam-box-remove" data-id="'+img.id+'" type="button" aria-label="Remove image">&times;</button>' : '') +
       '</div>' +
     '</div>';
@@ -135,25 +135,38 @@ function initMapfam(config){
   }
 
   function removeImage(id){
-    if(shared){
-      fetch(MAPFAM_UPLOAD_ENDPOINT + '?id=' + encodeURIComponent(id), {
-        method: 'DELETE',
-        headers: mapfamAuthHeaders()
-      })
-        .then(r => r.json())
-        .then(data => {
-          images = data.images || [];
-          render();
-        })
-        .catch(err => {
-          console.error('Mapfam remove failed:', err);
-          alert('Could not remove that image from the server. Try again.');
-        });
-    }else{
-      images = images.filter(i => i.id !== id);
-      saveLocalMapfamImages(images);
-      render();
-    }
+    const idx = images.findIndex(i => i.id === id);
+    if(idx === -1) return;
+    const removed = images[idx];
+    images = images.slice(0, idx).concat(images.slice(idx + 1)); // optimistic
+    render();
+
+    showUndoToast(
+      'Removed image',
+      () => {
+        // Commit: only now does the file actually get deleted (from R2 in
+        // shared mode, or from localStorage in local mode).
+        if(shared){
+          fetch(MAPFAM_UPLOAD_ENDPOINT + '?id=' + encodeURIComponent(id), {
+            method: 'DELETE',
+            headers: mapfamAuthHeaders()
+          })
+            .then(r => r.json())
+            .then(data => { images = data.images || images; render(); })
+            .catch(err => {
+              console.error('Mapfam remove failed:', err);
+              alert('Could not remove that image from the server. Try again.');
+            });
+        }else{
+          saveLocalMapfamImages(images);
+        }
+      },
+      () => {
+        // Undo: nothing was ever actually deleted, just put it back visually.
+        images = images.slice(0, idx).concat([removed], images.slice(idx));
+        render();
+      }
+    );
   }
 
   fileInput.addEventListener('change', (e) => {

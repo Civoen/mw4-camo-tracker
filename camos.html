@@ -48,6 +48,8 @@
       <div class="bars" id="progressBars"></div>
     </div>
 
+    <input type="text" class="weapon-search" id="weaponSearch" placeholder="Search weapons..." autocomplete="off">
+
     <div class="weapon-grid" id="weaponList"></div>
     <div class="task-filter-empty" id="taskFilterEmpty">No weapons in this class yet.</div>
   </section>
@@ -72,7 +74,8 @@
 initCamoChecklist({
   listElId: 'weaponList',
   classFilterId: 'classFilter',
-  filterEmptyId: 'taskFilterEmpty'
+  filterEmptyId: 'taskFilterEmpty',
+  searchInputId: 'weaponSearch'
 });
 </script>
 </body>

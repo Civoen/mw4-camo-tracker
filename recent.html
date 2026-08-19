@@ -41,6 +41,7 @@
 
   <section>
     <div class="page-toolbar">
+      <button class="trader-btn" id="downloadProgressCard" type="button">Download Progress Card</button>
       <button class="trader-btn trader-btn-danger" id="recentClearAll" type="button">Clear All</button>
     </div>
     <div class="recent-list" id="recentList"></div>
@@ -62,9 +63,11 @@
 
 <script src="data.js"></script>
 <script src="site.js"></script>
+<script src="progress-card.js"></script>
 <script>
 renderRecentList('recentList');
 initRecentClearAll('recentClearAll', 'recentList');
+initProgressCardButton('downloadProgressCard');
 </script>
 </body>
 </html>

@@ -195,6 +195,34 @@ document.getElementById('exportBtn').addEventListener('click', () => {
   showStatus('Progress file downloaded.', 'success');
 });
 
+// Re-applies the "every weapon in a class needs the tier below before any
+// can hold the tier above" rule to imported data. A backup from before this
+// rule existed (or a hand-edited file) could otherwise restore an invalid
+// state, like one weapon holding Platinum while a classmate never got Gold.
+function sanitizeCamoProgress(progress){
+  if(!progress || typeof progress !== 'object') return { progress: progress, fixedCount: 0 };
+  let fixedCount = 0;
+  WEAPON_CLASSES.forEach(cls => {
+    const weapons = WEAPONS.filter(w => w.class === cls);
+    for(let i = 1; i < CAMO_TIERS.length; i++){
+      const prevKey = CAMO_TIERS[i - 1].key;
+      const allHavePrev = weapons.length > 0 && weapons.every(w => (progress[w.name] || {})[prevKey]);
+      if(!allHavePrev){
+        for(let j = i; j < CAMO_TIERS.length; j++){
+          const key = CAMO_TIERS[j].key;
+          weapons.forEach(w => {
+            if(progress[w.name] && progress[w.name][key]){
+              progress[w.name][key] = false;
+              fixedCount++;
+            }
+          });
+        }
+      }
+    }
+  });
+  return { progress: progress, fixedCount: fixedCount };
+}
+
 function handleImportFile(file){
   if(!file){ return; }
   if(!file.name.toLowerCase().endsWith('.json')){
@@ -215,6 +243,18 @@ function handleImportFile(file){
       showStatus('No recognizable progress data found in that file.', 'error');
       return;
     }
+    let fixedCount = 0;
+    const progressKey = MW4CAMO_PREFIX + 'progress';
+    if(data[progressKey]){
+      try{
+        const parsed = JSON.parse(data[progressKey]);
+        const result = sanitizeCamoProgress(parsed);
+        fixedCount = result.fixedCount;
+        data[progressKey] = JSON.stringify(result.progress);
+      }catch(err){
+        // If it doesn't parse as expected, just import it as-is rather than blocking the whole restore.
+      }
+    }
     try{
       keys.forEach(k => localStorage.setItem(k, data[k]));
     }catch(err){
@@ -222,7 +262,8 @@ function handleImportFile(file){
       return;
     }
     document.getElementById('fileName').textContent = file.name;
-    showStatus('Progress imported \u2014 ' + keys.length + ' item(s) restored. Visit any page to see it reflected.', 'success');
+    const fixedNote = fixedCount ? (' ' + fixedCount + ' invalid tier' + (fixedCount === 1 ? '' : 's') + ' (earned without the required tier below it) were automatically corrected.') : '';
+    showStatus('Progress imported \u2014 ' + keys.length + ' item(s) restored. Visit any page to see it reflected.' + fixedNote, 'success');
   };
   reader.readAsText(file);
 }

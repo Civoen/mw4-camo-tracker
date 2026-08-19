@@ -115,6 +115,45 @@ function advanceNextTier(name){
 const RECENT_LOG_KEY = 'mw4camo-recent';
 const RECENT_LOG_LIMIT = 200;
 
+// ---- Undo toast ----
+// Shared by any "remove" action on the site. The actual destructive step
+// (saving to storage, or in Mapfam's shared mode, calling the delete API)
+// is deferred until the toast times out — so if the user hits Undo in time,
+// nothing was ever actually thrown away, not even server-side.
+let _undoToastEl = null;
+let _undoToastTimer = null;
+
+function showUndoToast(message, onCommit, onUndo){
+  if(_undoToastEl){
+    clearTimeout(_undoToastTimer);
+    if(_undoToastEl._onCommit) _undoToastEl._onCommit(); // finalize whatever was already pending
+    _undoToastEl.remove();
+    _undoToastEl = null;
+  }
+  const toast = document.createElement('div');
+  toast.className = 'undo-toast';
+  toast.innerHTML = '<span class="undo-toast-msg"></span><button class="undo-toast-btn" type="button">Undo</button>';
+  toast.querySelector('.undo-toast-msg').textContent = message;
+  document.body.appendChild(toast);
+  toast._onCommit = onCommit;
+  _undoToastEl = toast;
+
+  toast.querySelector('.undo-toast-btn').addEventListener('click', () => {
+    clearTimeout(_undoToastTimer);
+    onUndo();
+    toast.remove();
+    _undoToastEl = null;
+  });
+
+  requestAnimationFrame(() => toast.classList.add('open'));
+  _undoToastTimer = setTimeout(() => {
+    onCommit();
+    toast.classList.remove('open');
+    setTimeout(() => toast.remove(), 200);
+    _undoToastEl = null;
+  }, 6000);
+}
+
 function loadRecentLog(){
   try{
     const raw = localStorage.getItem(RECENT_LOG_KEY);
@@ -154,10 +193,12 @@ function formatRelativeTime(ts){
 // Renders the recent-activity feed on recent.html. Rows are clickable
 // (jump to that weapon's class on the Camo Tracker page); each has its own
 // remove button, plus a page-level "Clear All" wired up separately.
-function renderRecentList(containerId){
+// Renders a given log array (doesn't touch storage — used both for the
+// normal load and for optimistically showing a pending removal before it's
+// actually committed).
+function renderRecentRows(containerId, log){
   const el = document.getElementById(containerId);
   if(!el) return;
-  const log = loadRecentLog();
   el.innerHTML = log.length
     ? log.map((entry, i) =>
         '<div class="recent-row" data-index="'+i+'" data-class="'+entry.class+'" role="button" tabindex="0">' +
@@ -176,10 +217,16 @@ function renderRecentList(containerId){
   el.querySelectorAll('.recent-remove').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const log = loadRecentLog();
-      log.splice(parseInt(btn.getAttribute('data-index'), 10), 1);
-      saveRecentLog(log);
-      renderRecentList(containerId);
+      const idx = parseInt(btn.getAttribute('data-index'), 10);
+      const currentLog = loadRecentLog();
+      const removed = currentLog[idx];
+      const remaining = currentLog.slice(0, idx).concat(currentLog.slice(idx + 1));
+      renderRecentRows(containerId, remaining); // optimistic — nothing saved yet
+      showUndoToast(
+        'Removed "' + removed.name + ' \u00b7 ' + removed.tierLabel + '"',
+        () => saveRecentLog(remaining),        // commit: only now actually saved
+        () => renderRecentList(containerId)     // undo: re-render from untouched storage
+      );
     });
   });
   el.querySelectorAll('.recent-row').forEach(row => {
@@ -192,15 +239,23 @@ function renderRecentList(containerId){
   });
 }
 
+function renderRecentList(containerId){
+  renderRecentRows(containerId, loadRecentLog());
+}
+
 // Wires up the "Clear All" button on recent.html.
 function initRecentClearAll(buttonId, listContainerId){
   const btn = document.getElementById(buttonId);
   if(!btn) return;
   btn.addEventListener('click', () => {
-    if(!loadRecentLog().length) return;
-    if(!confirm('Clear all recent activity? This can\'t be undone.')) return;
-    saveRecentLog([]);
-    renderRecentList(listContainerId);
+    const currentLog = loadRecentLog();
+    if(!currentLog.length) return;
+    renderRecentRows(listContainerId, []); // optimistic — nothing saved yet
+    showUndoToast(
+      'Cleared ' + currentLog.length + ' entr' + (currentLog.length === 1 ? 'y' : 'ies'),
+      () => saveRecentLog([]),
+      () => renderRecentList(listContainerId)
+    );
   });
 }
 
@@ -426,6 +481,17 @@ function initCamoChecklist(config){
     return activeClass === 'All' ? WEAPONS : WEAPONS.filter(w => w.class === activeClass);
   }
 
+  // Search filters which cards are shown, but deliberately doesn't affect
+  // scopedWeapons() — the progress bar/percentage stay about the whole
+  // class, not just whatever the search happens to currently match.
+  let searchQuery = '';
+  function visibleWeapons(){
+    const scope = scopedWeapons();
+    if(!searchQuery) return scope;
+    const q = searchQuery.toLowerCase();
+    return scope.filter(w => w.name.toLowerCase().includes(q));
+  }
+
   // Big % reflects Gold completion for the current scope (the headline the
   // design calls out), with a labeled bar-row underneath for every tier so
   // the breakdown stays legible on narrow screens too.
@@ -506,10 +572,11 @@ function initCamoChecklist(config){
   }
 
   function render(){
-    const scope = scopedWeapons();
-    listEl.innerHTML = scope.length
-      ? scope.map(renderRow).join('')
-      : '<div class="empty-note">No weapons in this class yet.</div>';
+    const visible = visibleWeapons();
+    const hasClassMatches = scopedWeapons().length > 0;
+    listEl.innerHTML = visible.length
+      ? visible.map(renderRow).join('')
+      : '<div class="empty-note">' + (hasClassMatches ? 'No weapons match your search.' : 'No weapons in this class yet.') + '</div>';
     bindRowEvents();
     updateProgressBar();
     updateFilterEmpty();
@@ -581,6 +648,14 @@ function initCamoChecklist(config){
       const btn = e.target.closest('.class-filter-btn');
       if(!btn) return;
       activeClass = btn.getAttribute('data-class');
+      render();
+    });
+  }
+
+  const searchInputEl = config.searchInputId ? document.getElementById(config.searchInputId) : null;
+  if(searchInputEl){
+    searchInputEl.addEventListener('input', () => {
+      searchQuery = searchInputEl.value.trim();
       render();
     });
   }
