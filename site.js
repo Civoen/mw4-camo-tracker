@@ -439,6 +439,47 @@ document.addEventListener('keydown', (e) => {
 // ---- Homepage: weapon class summary tiles ----
 // Renders one tile per class (e.g. "Assault Rifles 2/7") linking into the
 // Camo Tracker pre-filtered to that class, plus an "All Weapons" tile.
+// Homepage search: live dropdown of matching weapons, each linking into
+// the Camo Tracker pre-filtered to that weapon's class with the search
+// term carried over (?class=X&search=Y), so the same result is highlighted
+// there instead of just dumping the visitor on an unfiltered page.
+function initHomeWeaponSearch(inputId, resultsId){
+  const input = document.getElementById(inputId);
+  const results = document.getElementById(resultsId);
+  if(!input || !results) return;
+
+  function renderResults(query){
+    const q = query.trim().toLowerCase();
+    if(!q){ results.classList.remove('open'); results.innerHTML = ''; return; }
+    const matches = WEAPONS.filter(w => w.name.toLowerCase().includes(q)).slice(0, 8);
+    results.innerHTML = matches.length
+      ? matches.map(w =>
+          '<div class="home-search-row" data-name="'+w.name+'" data-class="'+w.class+'">' +
+            '<span class="home-search-name">'+w.name+'</span>' +
+            '<span class="home-search-class">'+w.class+'</span>' +
+          '</div>'
+        ).join('')
+      : '<div class="home-search-empty">No weapons found</div>';
+    results.classList.add('open');
+  }
+
+  input.addEventListener('input', () => renderResults(input.value));
+  input.addEventListener('focus', () => renderResults(input.value));
+  results.addEventListener('click', (e) => {
+    const row = e.target.closest('.home-search-row');
+    if(!row) return;
+    const cls = row.getAttribute('data-class');
+    const name = row.getAttribute('data-name');
+    window.location.href = 'camos.html?class=' + encodeURIComponent(cls) + '&search=' + encodeURIComponent(name);
+  });
+  document.addEventListener('click', (e) => {
+    if(!e.target.closest('.home-search-wrap')) results.classList.remove('open');
+  });
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape') results.classList.remove('open');
+  });
+}
+
 function renderClassSummary(containerId){
   const el = document.getElementById(containerId);
   if(!el) return;
@@ -485,7 +526,7 @@ function initCamoChecklist(config){
   // Search filters which cards are shown, but deliberately doesn't affect
   // scopedWeapons() — the progress bar/percentage stay about the whole
   // class, not just whatever the search happens to currently match.
-  let searchQuery = '';
+  let searchQuery = params.get('search') || '';
   function visibleWeapons(){
     const scope = scopedWeapons();
     if(!searchQuery) return scope;
@@ -655,6 +696,7 @@ function initCamoChecklist(config){
 
   const searchInputEl = config.searchInputId ? document.getElementById(config.searchInputId) : null;
   if(searchInputEl){
+    if(searchQuery) searchInputEl.value = searchQuery;
     searchInputEl.addEventListener('input', () => {
       searchQuery = searchInputEl.value.trim();
       render();

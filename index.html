@@ -48,6 +48,36 @@
   }
   .hero .sub{font-size:clamp(13px, 3vw, 15px);margin:0 0 26px;}
   .home-progress{margin-bottom:26px;text-align:left;}
+  .home-search-wrap{position:relative;margin-bottom:22px;}
+  .home-search-results{
+    display:none;
+    position:absolute;
+    top:100%;left:0;right:0;
+    margin-top:4px;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    z-index:10;
+    text-align:left;
+    max-height:280px;
+    overflow-y:auto;
+    scrollbar-width:thin;
+    scrollbar-color:var(--line) var(--panel-2);
+  }
+  .home-search-results.open{display:block;}
+  .home-search-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    padding:11px 14px;
+    cursor:pointer;
+    border-bottom:1px solid var(--line);
+  }
+  .home-search-row:last-child{border-bottom:none;}
+  .home-search-row:hover{background:var(--panel);border-color:var(--gold);}
+  .home-search-name{font-weight:700;color:var(--paper);font-size:14px;}
+  .home-search-class{font-size:11px;color:var(--dim);text-transform:uppercase;letter-spacing:.04em;}
+  .home-search-empty{padding:14px;font-size:12px;color:var(--dim);text-align:center;}
 </style>
 </head>
 <body>
@@ -64,6 +94,11 @@
   <span class="eyebrow">Placeholder Data &middot; BO6 Weapons</span>
   <h1>MW<img class="mw4-glyph" src="mw4-vector.svg" alt="4"> Camo Tracker</h1>
   <div class="sub">A quick and easy way to track your camo grind</div>
+
+  <div class="home-search-wrap">
+    <input type="text" class="weapon-search" id="homeWeaponSearch" placeholder="Search weapons..." autocomplete="off">
+    <div class="home-search-results" id="homeSearchResults"></div>
+  </div>
 
   <div class="home-progress">
     <a class="progress-block progress-block-link" href="recent.html" style="flex-direction:column;align-items:stretch;gap:6px;">
@@ -97,6 +132,7 @@
 <script src="progress-card.js"></script>
 <script>
 renderClassSummary('classGrid');
+initHomeWeaponSearch('homeWeaponSearch', 'homeSearchResults');
 initProgressCardButton('downloadProgressCard');
 
 (function(){
