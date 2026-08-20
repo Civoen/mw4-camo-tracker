@@ -65,7 +65,7 @@ h1{
   font-size:11px;
   letter-spacing:.12em;
   text-transform:uppercase;
-  padding:6px 14px 7px;
+  padding:6px 30px 7px 14px;
   clip-path:polygon(0 0, 100% 0, calc(100% - 26px) 100%, 0% 100%);
 }
 
