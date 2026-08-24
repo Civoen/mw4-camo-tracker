@@ -414,6 +414,7 @@ if(topbarRightEl){
   const staticLinks = [
     { name: 'Home', url: 'index.html' },
     { name: 'Camo Tracker', url: 'camos.html' },
+    { name: 'Stats', url: 'stats.html' },
     { name: 'Recent', url: 'recent.html' },
     { name: 'Mapfam', url: 'mapfam.html' },
     { name: 'Manage Data', url: 'import.html', danger: true }

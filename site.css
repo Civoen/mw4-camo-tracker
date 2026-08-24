@@ -512,6 +512,173 @@ footer{
 
 /* ---- Homepage ---- */
 /* ---- Mode switcher (Multiplayer / Warzone / DMZ) ---- */
+/* ---- Stats page ---- */
+.stats-overview{
+  background:var(--panel);
+  border:1px solid var(--line);
+  padding:28px;
+  margin-bottom:24px;
+}
+.stats-hero-pct{
+  font-family:'Stack Sans Headline', 'DejaVu Sans Condensed', sans-serif;
+  font-weight:700;
+  font-size:56px;
+  line-height:1;
+  margin-bottom:22px;
+}
+.stats-hero-pct span{
+  display:block;
+  font-family:'Barlow', sans-serif;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--dim);
+  margin-top:8px;
+}
+.stats-mini-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));
+  gap:16px;
+}
+.stats-mini{
+  background:var(--panel-2);
+  border:1px solid var(--line);
+  padding:14px 16px;
+}
+.stats-mini-value{
+  font-family:'Stack Sans Headline', 'DejaVu Sans Condensed', sans-serif;
+  font-weight:700;
+  font-size:26px;
+  color:var(--paper);
+  line-height:1.1;
+}
+.stats-mini-label{
+  font-size:11px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  color:var(--dim);
+  margin-top:6px;
+}
+.stats-section{margin-bottom:28px;}
+.stats-section h2{
+  font-family:'Stack Sans Headline', 'DejaVu Sans Condensed', sans-serif;
+  font-weight:700;
+  font-size:18px;
+  text-transform:uppercase;
+  letter-spacing:.02em;
+  color:var(--paper);
+  margin:0 0 14px;
+  padding-left:12px;
+  border-left:3px solid var(--gold);
+}
+.stats-chart{
+  background:var(--panel);
+  border:1px solid var(--line);
+  padding:16px;
+}
+.stats-chart-svg{width:100%;height:auto;display:block;}
+.stats-chart-footnote{
+  font-size:11.5px;
+  color:var(--dim);
+  margin-top:10px;
+}
+.stats-tier-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
+  gap:14px;
+}
+.stats-tier-card{
+  background:var(--panel);
+  border:1px solid var(--line);
+  padding:14px 16px;
+}
+.stats-tier-bar-track{
+  height:8px;
+  background:var(--panel-2);
+  border:1px solid var(--line);
+  margin-bottom:10px;
+}
+.stats-tier-bar-fill{height:100%;}
+.stats-tier-row{
+  display:flex;
+  justify-content:space-between;
+  font-size:12.5px;
+  font-weight:700;
+  color:var(--paper);
+  text-transform:uppercase;
+  letter-spacing:.03em;
+}
+.stats-class-list{display:flex;flex-direction:column;gap:10px;}
+.stats-class-row{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  background:var(--panel);
+  border:1px solid var(--tier-border, var(--line));
+  padding:12px 16px;
+  flex-wrap:wrap;
+}
+.stats-class-name{
+  font-weight:700;
+  font-size:13px;
+  text-transform:uppercase;
+  letter-spacing:.03em;
+  color:var(--paper);
+  min-width:130px;
+}
+.stats-class-bar-track{
+  flex:1;
+  min-width:120px;
+  height:8px;
+  background:var(--panel-2);
+  border:1px solid var(--line);
+}
+.stats-class-bar-fill{height:100%;background:var(--tier-border, var(--gold));}
+.stats-class-pct{
+  font-family:'Stack Sans Headline', 'DejaVu Sans Condensed', sans-serif;
+  font-weight:700;
+  font-size:16px;
+  color:var(--tier-border, var(--gold));
+  width:48px;
+  text-align:right;
+}
+.stats-class-count{
+  font-size:11px;
+  color:var(--dim);
+  white-space:nowrap;
+}
+.stats-milestone-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(190px, 1fr));
+  gap:14px;
+}
+.stats-milestone{
+  background:var(--panel);
+  border:1px solid var(--line);
+  padding:14px 16px;
+}
+.stats-milestone-label{
+  font-size:11px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  color:var(--dim);
+  margin-bottom:8px;
+}
+.stats-milestone-value{
+  font-family:'Stack Sans Headline', 'DejaVu Sans Condensed', sans-serif;
+  font-weight:700;
+  font-size:17px;
+  color:var(--paper);
+}
+.stats-milestone-sub{
+  font-size:11.5px;
+  color:var(--gold);
+  margin-top:4px;
+}
+
 .mode-switcher{
   display:flex;
   gap:8px;

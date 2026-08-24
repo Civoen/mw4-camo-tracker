@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Camo Tracker | MW4 Camo Tracker</title>
+<title>Stats | MW4 Camo Tracker</title>
 <meta property="og:type" content="website">
-<meta property="og:title" content="Camo Tracker | MW4 Camo Tracker">
-<meta property="og:description" content="Track mastery camo progress across every Modern Warfare 4 weapon.">
+<meta property="og:title" content="Stats | MW4 Camo Tracker">
+<meta property="og:description" content="Cumulative progress, streaks, and completion dates across your camo grind.">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Camo Tracker | MW4 Camo Tracker">
-<meta name="twitter:description" content="Track mastery camo progress across every Modern Warfare 4 weapon.">
+<meta name="twitter:title" content="Stats | MW4 Camo Tracker">
+<meta name="twitter:description" content="Cumulative progress, streaks, and completion dates across your camo grind.">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#131211">
@@ -39,24 +39,12 @@
 
   <header>
     <span class="eyebrow mode-badge">Multiplayer</span>
-    <h1>Camo Tracker</h1>
+    <h1>Stats</h1>
   </header>
 
-  <section>
-    <div class="class-filter-row" id="classFilter"></div>
+  <section id="statsRoot"></section>
 
-    <div class="progress-block" id="progressBlock">
-      <div class="big-pct" id="progressBigPct">0%<span>All Weapons &middot; Overall</span></div>
-      <div class="bars" id="progressBars"></div>
-    </div>
-
-    <input type="text" class="weapon-search" id="weaponSearch" placeholder="Search weapons..." autocomplete="off">
-
-    <div class="weapon-grid" id="weaponList"></div>
-    <div class="task-filter-empty" id="taskFilterEmpty">No weapons in this class yet.</div>
-  </section>
-
-  <footer>Click a weapon to pin it to Currently Grinding. Checking a tier requires the tier before it &mdash; unchecking a tier clears any tiers earned after it.</footer>
+  <footer>Time-based stats (streaks, dates, the chart) are built from your Recent activity log, so they reflect recorded events rather than every possible way progress could change.</footer>
 </div>
 
 <div class="grind-list" id="grindList">
@@ -74,14 +62,10 @@
 
 <script src="data.js"></script>
 <script src="site.js"></script>
+<script src="stats.js"></script>
 <script>
 renderNavModeSwitcher('navModeSwitcher');
-initCamoChecklist({
-  listElId: 'weaponList',
-  classFilterId: 'classFilter',
-  filterEmptyId: 'taskFilterEmpty',
-  searchInputId: 'weaponSearch'
-});
+renderStatsPage('statsRoot');
 </script>
 </body>
 </html>
