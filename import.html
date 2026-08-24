@@ -130,12 +130,30 @@
     text-decoration:none;
   }
   .home-link:hover{color:var(--hazard);}
+  .mode-indicator{
+    display:inline-block;
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    color:var(--dim);
+    margin-bottom:18px;
+  }
+  .mode-indicator span{color:var(--mode-accent, var(--gold));}
+  .reset-disclaimer{
+    font-size:11.5px;
+    color:var(--dim);
+    line-height:1.5;
+    margin-top:10px;
+    text-align:left;
+  }
 </style>
 </head>
 <body>
 <div class="hero">
   <h1>Manage Data</h1>
   <div class="sub">Back up or restore your progress on this browser</div>
+  <div class="mode-indicator" id="modeIndicator">Currently editing: <span id="modeIndicatorLabel">Multiplayer</span></div>
 
   <div class="drop-box" id="dropBox">
     <span class="icon">&#9660;</span>
@@ -149,16 +167,20 @@
   <button class="export-btn" id="exportBtn" type="button">Export</button>
 
   <button class="reset-btn" id="resetBtn" type="button">Reset Progress</button>
+  <div class="reset-disclaimer">Resets Multiplayer, Warzone, <em>and</em> DMZ progress together &mdash; not just the tracker you're currently viewing.</div>
 
   <div class="test-section">
     <div class="test-label">Testing Only &middot; Will Be Removed</div>
-    <button class="test-btn" id="testMaxBtn" type="button">Set All Weapons to 100% (Nova)</button>
+    <button class="test-btn" id="testMaxBtn" type="button">Set All Weapons to 100% (Nova) &mdash; Current Mode Only</button>
   </div>
 
   <a class="home-link" href="index.html">&larr; Back to Homepage</a>
 </div>
 
 <script>
+document.getElementById('modeIndicatorLabel').textContent = getModeInfo(getCurrentMode()).label;
+document.documentElement.style.setProperty('--mode-accent', getModeInfo(getCurrentMode()).accent);
+
 const MW4CAMO_PREFIX = 'mw4camo-';
 
 function collectBundle(){
@@ -244,17 +266,19 @@ function handleImportFile(file){
       return;
     }
     let fixedCount = 0;
-    const progressKey = MW4CAMO_PREFIX + 'progress';
-    if(data[progressKey]){
-      try{
-        const parsed = JSON.parse(data[progressKey]);
-        const result = sanitizeCamoProgress(parsed);
-        fixedCount = result.fixedCount;
-        data[progressKey] = JSON.stringify(result.progress);
-      }catch(err){
-        // If it doesn't parse as expected, just import it as-is rather than blocking the whole restore.
+    MODES.forEach(m => {
+      const progressKey = MW4CAMO_PREFIX + 'progress-' + m.key;
+      if(data[progressKey]){
+        try{
+          const parsed = JSON.parse(data[progressKey]);
+          const result = sanitizeCamoProgress(parsed);
+          fixedCount += result.fixedCount;
+          data[progressKey] = JSON.stringify(result.progress);
+        }catch(err){
+          // If it doesn't parse as expected, just import it as-is rather than blocking the whole restore.
+        }
       }
-    }
+    });
     try{
       keys.forEach(k => localStorage.setItem(k, data[k]));
     }catch(err){
@@ -284,7 +308,15 @@ dropBox.addEventListener('drop', (e) => {
 
 // ---- Reset progress (two-step confirm) ----
 const resetBtn = document.getElementById('resetBtn');
-const RESET_KEYS = ['mw4camo-progress', 'mw4camo-grindlist', 'mw4camo-recent'];
+// Reset wipes all three modes' progress/grindlist/recent together — see
+// the disclaimer text next to the button. Built from MODES so adding a
+// fourth mode later doesn't require remembering to update this list.
+const RESET_KEYS = [];
+MODES.forEach(m => {
+  RESET_KEYS.push('mw4camo-progress-' + m.key);
+  RESET_KEYS.push('mw4camo-grindlist-' + m.key);
+  RESET_KEYS.push('mw4camo-recent-' + m.key);
+});
 let resetPending = false;
 let resetTimeout = null;
 
@@ -313,13 +345,15 @@ resetBtn.addEventListener('click', () => {
 });
 
 // ---- TEMPORARY: testing-only button to instantly max every weapon ----
-// Sets every weapon to full Nova (all 4 tiers), pushing every percentage
-// on the site to 100%. Not meant to ship — remove this button, its CSS
-// (.test-section/.test-label/.test-btn), and this handler when done testing.
+// Sets every weapon to full Nova (all 4 tiers) for the CURRENT mode only,
+// pushing that mode's percentages to 100%. Not meant to ship — remove this
+// button, its CSS (.test-section/.test-label/.test-btn), and this handler
+// when done testing.
 const testMaxBtn = document.getElementById('testMaxBtn');
 if(testMaxBtn){
   testMaxBtn.addEventListener('click', () => {
-    if(!confirm('Set every weapon to 100% (Nova)? This overwrites your current progress.')) return;
+    const modeLabel = getModeInfo(getCurrentMode()).label;
+    if(!confirm('Set every weapon to 100% (Nova) for ' + modeLabel + ' only? This overwrites current progress for that mode.')) return;
     const progress = {};
     WEAPONS.forEach(w => {
       const tiers = {};
@@ -327,8 +361,8 @@ if(testMaxBtn){
       progress[w.name] = tiers;
     });
     try{
-      localStorage.setItem('mw4camo-progress', JSON.stringify(progress));
-      showStatus('All ' + WEAPONS.length + ' weapons set to 100% (Nova). Visit any page to see it reflected.', 'success');
+      localStorage.setItem(modeStorageKey('mw4camo-progress'), JSON.stringify(progress));
+      showStatus('All ' + WEAPONS.length + ' weapons set to 100% (Nova) for ' + modeLabel + '. Visit any page to see it reflected.', 'success');
     }catch(e){
       showStatus('Could not save — this browser\'s local storage may be full.', 'error');
     }

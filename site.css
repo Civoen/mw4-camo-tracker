@@ -59,7 +59,9 @@ h1{
   display:inline-flex;
   align-items:center;
   gap:8px;
-  background:var(--gold);
+  min-width:120px;
+  justify-content:center;
+  background:var(--mode-accent, var(--gold));
   color:#1a1200;
   font-weight:700;
   font-size:11px;
@@ -509,6 +511,82 @@ footer{
 }
 
 /* ---- Homepage ---- */
+/* ---- Mode switcher (Multiplayer / Warzone / DMZ) ---- */
+.mode-switcher{
+  display:flex;
+  gap:8px;
+  justify-content:center;
+  flex-wrap:wrap;
+  margin-bottom:22px;
+}
+.mode-pill{
+  background:var(--panel-2);
+  border:1px solid var(--line);
+  color:var(--dim);
+  font-family:'Barlow', sans-serif;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  font-size:12px;
+  padding:10px 22px;
+  cursor:pointer;
+}
+.mode-pill:hover{border-color:var(--pill-accent, var(--gold));color:var(--paper);}
+.mode-pill.active{
+  background:var(--pill-accent, var(--gold));
+  border-color:var(--pill-accent, var(--gold));
+  color:#1a1200;
+}
+
+/* Compact dropdown version used in the nav bar on non-homepage pages. */
+.nav-mode-switcher{position:relative;}
+.nav-mode-btn{
+  background:var(--panel-2);
+  border:1px solid var(--mode-accent, var(--gold));
+  color:var(--paper);
+  font-family:'Barlow', sans-serif;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.03em;
+  font-size:12px;
+  padding:9px 12px;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  white-space:nowrap;
+}
+.nav-mode-btn:hover{color:var(--mode-accent, var(--gold));}
+.nav-mode-caret{font-size:9px;color:var(--mode-accent, var(--gold));}
+.nav-mode-menu{
+  display:none;
+  position:absolute;
+  top:100%;right:0;
+  margin-top:6px;
+  width:160px;
+  background:var(--panel-2);
+  border:1px solid var(--line);
+  z-index:50;
+}
+.nav-mode-menu.open{display:block;}
+.nav-mode-option{
+  display:block;
+  width:100%;
+  text-align:left;
+  background:none;
+  border:none;
+  border-bottom:1px solid var(--line);
+  color:var(--paper);
+  font-family:'Barlow', sans-serif;
+  font-weight:600;
+  font-size:13px;
+  padding:10px 14px;
+  cursor:pointer;
+}
+.nav-mode-option:last-child{border-bottom:none;}
+.nav-mode-option:hover{background:var(--panel);color:var(--pill-accent, var(--gold));}
+.nav-mode-option.active{color:var(--pill-accent, var(--gold));}
+
 .class-grid{
   display:grid;
   grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));
@@ -629,7 +707,7 @@ body.grindlist-fullscreen > .hero{
 .grind-list-bar{
   width:100%;
   background:var(--panel);
-  border:1px solid var(--gold);
+  border:1px solid var(--mode-accent, var(--gold));
   padding:10px 16px;
   display:flex;
   align-items:center;
@@ -639,7 +717,7 @@ body.grindlist-fullscreen > .hero{
 }
 .grind-list.fullscreen .grind-list-bar{
   border:none;
-  border-top:3px solid var(--gold);
+  border-top:3px solid var(--mode-accent, var(--gold));
   border-left:1px solid var(--line);
   border-right:1px solid var(--line);
   cursor:default;
@@ -664,7 +742,7 @@ body.grindlist-fullscreen > .hero{
   gap:10px;
 }
 .grind-list-count{
-  background:var(--gold);
+  background:var(--mode-accent, var(--gold));
   color:#1a1200;
   font-weight:700;
   padding:2px 9px;
@@ -687,7 +765,7 @@ body.grindlist-fullscreen > .hero{
 }
 .grind-list.open .grind-list-fullscreen,
 .grind-list.fullscreen .grind-list-fullscreen{display:inline-block;}
-.grind-list-fullscreen:hover{border-color:var(--gold);color:var(--gold);}
+.grind-list-fullscreen:hover{border-color:var(--mode-accent, var(--gold));color:var(--mode-accent, var(--gold));}
 .grind-list.fullscreen .grind-list-panel{max-height:none;height:auto;}
 .grind-list-panel,
 .mobile-menu-panel{

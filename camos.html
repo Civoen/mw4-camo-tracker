@@ -27,6 +27,7 @@
 
   <div class="topbar">
     <div class="topbar-right">
+      <div class="nav-mode-switcher" id="navModeSwitcher"></div>
       <a class="trader-btn" href="index.html">Home</a>
       <a class="trader-btn" href="camos.html">Camo Tracker</a>
       <a class="trader-btn" href="recent.html">Recent</a>
@@ -36,7 +37,7 @@
   </div>
 
   <header>
-    <span class="eyebrow">Placeholder Data &middot; BO6 Weapons</span>
+    <span class="eyebrow mode-badge">Multiplayer</span>
     <h1>Camo Tracker</h1>
   </header>
 
@@ -73,6 +74,7 @@
 <script src="data.js"></script>
 <script src="site.js"></script>
 <script>
+renderNavModeSwitcher('navModeSwitcher');
 initCamoChecklist({
   listElId: 'weaponList',
   classFilterId: 'classFilter',

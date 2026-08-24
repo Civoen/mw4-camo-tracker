@@ -91,9 +91,11 @@
   </div>
 </div>
 <div class="hero">
-  <span class="eyebrow">Placeholder Data &middot; BO6 Weapons</span>
+  <span class="eyebrow mode-badge">Multiplayer</span>
   <h1>MW<img class="mw4-glyph" src="mw4-vector.svg" alt="4"> Camo Tracker</h1>
   <div class="sub">A quick and easy way to track your camo grind</div>
+
+  <div class="mode-switcher" id="modeSwitcher"></div>
 
   <div class="home-search-wrap">
     <input type="text" class="weapon-search" id="homeWeaponSearch" placeholder="Search weapons..." autocomplete="off">
@@ -132,6 +134,7 @@
 <script src="progress-card.js"></script>
 <script>
 renderClassSummary('classGrid');
+renderModeSwitcher('modeSwitcher');
 initHomeWeaponSearch('homeWeaponSearch', 'homeSearchResults');
 initProgressCardButton('downloadProgressCard');
 

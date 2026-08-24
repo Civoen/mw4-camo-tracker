@@ -27,6 +27,7 @@
 
   <div class="topbar">
     <div class="topbar-right">
+      <div class="nav-mode-switcher" id="navModeSwitcher"></div>
       <a class="trader-btn" href="index.html">Home</a>
       <a class="trader-btn" href="camos.html">Camo Tracker</a>
       <a class="trader-btn" href="recent.html">Recent</a>
@@ -68,6 +69,7 @@
 <script src="site.js"></script>
 <script src="mapfam.js"></script>
 <script>
+renderNavModeSwitcher('navModeSwitcher');
 initMapfam({
   gridElId: 'mapfamGrid',
   addImageBtnId: 'mapfamAddImage',

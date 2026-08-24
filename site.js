@@ -1,7 +1,11 @@
+// Runs on every page load so the eyebrow badge, mode accent, and any other
+// mode-aware styling stay correct regardless of which page you land on.
+applyModeAccent();
+
 // ---- Shared progress helpers ----
 function loadCamoProgress(){
   try{
-    const raw = localStorage.getItem('mw4camo-progress');
+    const raw = localStorage.getItem(modeStorageKey('mw4camo-progress'));
     return raw ? JSON.parse(raw) : {};
   }catch(e){
     return {};
@@ -9,7 +13,7 @@ function loadCamoProgress(){
 }
 
 function saveCamoProgress(progress){
-  try{ localStorage.setItem('mw4camo-progress', JSON.stringify(progress)); }catch(e){}
+  try{ localStorage.setItem(modeStorageKey('mw4camo-progress'), JSON.stringify(progress)); }catch(e){}
 }
 
 // A weapon counts as "mastered" once every tier in CAMO_TIERS is checked.
@@ -156,7 +160,7 @@ function showUndoToast(message, onCommit, onUndo){
 
 function loadRecentLog(){
   try{
-    const raw = localStorage.getItem(RECENT_LOG_KEY);
+    const raw = localStorage.getItem(modeStorageKey(RECENT_LOG_KEY));
     return raw ? JSON.parse(raw) : [];
   }catch(e){
     return [];
@@ -164,7 +168,7 @@ function loadRecentLog(){
 }
 
 function saveRecentLog(list){
-  try{ localStorage.setItem(RECENT_LOG_KEY, JSON.stringify(list)); }catch(e){}
+  try{ localStorage.setItem(modeStorageKey(RECENT_LOG_KEY), JSON.stringify(list)); }catch(e){}
 }
 
 function logCamoChange(weaponName, tierKey){
@@ -264,7 +268,7 @@ const GRIND_LIST_KEY = 'mw4camo-grindlist';
 
 function loadGrindList(){
   try{
-    const raw = localStorage.getItem(GRIND_LIST_KEY);
+    const raw = localStorage.getItem(modeStorageKey(GRIND_LIST_KEY));
     return raw ? JSON.parse(raw) : [];
   }catch(e){
     return [];
@@ -272,7 +276,7 @@ function loadGrindList(){
 }
 
 function saveGrindList(list){
-  try{ localStorage.setItem(GRIND_LIST_KEY, JSON.stringify(list)); }catch(e){}
+  try{ localStorage.setItem(modeStorageKey(GRIND_LIST_KEY), JSON.stringify(list)); }catch(e){}
 }
 
 let grindList = loadGrindList();
@@ -477,6 +481,63 @@ function initHomeWeaponSearch(inputId, resultsId){
   });
   document.addEventListener('keydown', (e) => {
     if(e.key === 'Escape') results.classList.remove('open');
+  });
+}
+
+// Full 3-pill switcher, used on the homepage. Switching mode reloads the
+// page — simplest way to guarantee every piece of mode-aware state
+// (progress, grind list, recent log, accent color, eyebrow badge) re-reads
+// from the newly-selected mode's storage rather than needing each of those
+// systems to support being swapped out live.
+function renderModeSwitcher(containerId){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  const current = getCurrentMode();
+  el.innerHTML = MODES.map(m =>
+    '<button class="mode-pill'+(m.key === current ? ' active' : '')+'" data-mode="'+m.key+'" type="button" style="--pill-accent:'+m.accent+'">'+m.label+'</button>'
+  ).join('');
+  el.querySelectorAll('.mode-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mode = btn.getAttribute('data-mode');
+      if(mode === getCurrentMode()) return;
+      setCurrentMode(mode);
+      window.location.reload();
+    });
+  });
+}
+
+// Compact dropdown version for the nav bar on every other page, so you can
+// switch modes without needing to go back to the homepage first.
+function renderNavModeSwitcher(wrapId){
+  const wrap = document.getElementById(wrapId);
+  if(!wrap) return;
+  const current = getCurrentMode();
+  const currentInfo = getModeInfo(current);
+  wrap.innerHTML =
+    '<button class="nav-mode-btn" id="navModeBtn" type="button">'+currentInfo.label+' <span class="nav-mode-caret">&#9662;</span></button>' +
+    '<div class="nav-mode-menu" id="navModeMenu">' +
+      MODES.map(m =>
+        '<button class="nav-mode-option'+(m.key === current ? ' active' : '')+'" data-mode="'+m.key+'" type="button" style="--pill-accent:'+m.accent+'">'+m.label+'</button>'
+      ).join('') +
+    '</div>';
+
+  const btn = document.getElementById('navModeBtn');
+  const menu = document.getElementById('navModeMenu');
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    menu.classList.toggle('open');
+  });
+  menu.querySelectorAll('.nav-mode-option').forEach(opt => {
+    opt.addEventListener('click', () => {
+      const mode = opt.getAttribute('data-mode');
+      if(mode !== getCurrentMode()){
+        setCurrentMode(mode);
+        window.location.reload();
+      }
+    });
+  });
+  document.addEventListener('click', (e) => {
+    if(!e.target.closest('.nav-mode-switcher')) menu.classList.remove('open');
   });
 }
 

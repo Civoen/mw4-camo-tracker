@@ -27,6 +27,7 @@
 
   <div class="topbar">
     <div class="topbar-right">
+      <div class="nav-mode-switcher" id="navModeSwitcher"></div>
       <a class="trader-btn" href="index.html">Home</a>
       <a class="trader-btn" href="camos.html">Camo Tracker</a>
       <a class="trader-btn" href="recent.html">Recent</a>
@@ -65,6 +66,7 @@
 <script src="data.js"></script>
 <script src="site.js"></script>
 <script>
+renderNavModeSwitcher('navModeSwitcher');
 renderRecentList('recentList');
 initRecentClearAll('recentClearAll', 'recentList');
 </script>
