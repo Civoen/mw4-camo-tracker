@@ -495,7 +495,7 @@ footer{
 }
 .mapfam-zoom-overlay.open{display:flex;}
 .mapfam-zoom-overlay img{
-  width:min(90vw, 640px);
+  width:min(92vw, 900px);
   aspect-ratio:1/1;
   object-fit:contain;
   border:1px solid var(--line);

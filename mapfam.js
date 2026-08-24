@@ -34,7 +34,7 @@ const MAPFAM_UPLOAD_TOKEN = '';
 // it does not restrict who can view images, and (like everything static)
 // it's not real security since the passphrase lives in this file's plain
 // text source. Change it to whatever you like before deploying.
-const MAPFAM_EDIT_PASSPHRASE = 'changeme';
+const MAPFAM_EDIT_PASSPHRASE = 'boost';
 const MAPFAM_UNLOCK_KEY = 'mw4camo-mapfam-unlocked';
 
 const MAPFAM_IMAGES_KEY = 'mw4camo-mapfam-images'; // local-only fallback storage

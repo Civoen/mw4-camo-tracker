@@ -97,8 +97,8 @@ function classLabel(cls){
 // MW4's actual brand color, not just a placeholder.
 const MODES = [
   { key: 'mp', label: 'Multiplayer', accent: 'var(--gold)' },
-  { key: 'wz', label: 'Warzone', accent: '#CF5302' },
-  { key: 'dmz', label: 'DMZ', accent: '#4FB9AF' }
+  { key: 'wz', label: 'Warzone', accent: 'var(--gold)' }, // was #CF5302 — reverted to gold, revisit if needed
+  { key: 'dmz', label: 'DMZ', accent: 'var(--gold)' } // was #4FB9AF — reverted to gold, revisit if needed
 ];
 
 const MODE_KEY_STORAGE = 'mw4camo-mode';
