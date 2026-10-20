@@ -171,7 +171,7 @@
 
   <div class="test-section">
     <div class="test-label">Testing Only &middot; Will Be Removed</div>
-    <button class="test-btn" id="testMaxBtn" type="button">Set All Weapons to 100% (Nova) &mdash; Current Mode Only</button>
+    <button class="test-btn" id="testMaxBtn" type="button">Set All Weapons to 100% &mdash; Current Mode Only</button>
   </div>
 
   <a class="home-link" href="index.html">&larr; Back to Homepage</a>
@@ -217,32 +217,28 @@ document.getElementById('exportBtn').addEventListener('click', () => {
   showStatus('Progress file downloaded.', 'success');
 });
 
-// Re-applies the "every weapon in a class needs the tier below before any
-// can hold the tier above" rule to imported data. A backup from before this
-// rule existed (or a hand-edited file) could otherwise restore an invalid
-// state, like one weapon holding Platinum while a classmate never got Gold.
-function sanitizeCamoProgress(progress){
+// Re-applies the "each weapon's mastery camos unlock in order" rule to
+// imported data, using that mode's own camo list. A hand-edited file could
+// otherwise restore an impossible state, like a weapon holding its second
+// mastery camo without the first.
+function sanitizeCamoProgress(progress, tiers){
   if(!progress || typeof progress !== 'object') return { progress: progress, fixedCount: 0 };
   let fixedCount = 0;
-  WEAPON_CLASSES.forEach(cls => {
-    const weapons = WEAPONS.filter(w => w.class === cls);
-    for(let i = 1; i < CAMO_TIERS.length; i++){
-      const prevKey = CAMO_TIERS[i - 1].key;
-      const allHavePrev = weapons.length > 0 && weapons.every(w => (progress[w.name] || {})[prevKey]);
-      if(!allHavePrev){
-        for(let j = i; j < CAMO_TIERS.length; j++){
-          const key = CAMO_TIERS[j].key;
-          weapons.forEach(w => {
-            if(progress[w.name] && progress[w.name][key]){
-              progress[w.name][key] = false;
-              fixedCount++;
-            }
-          });
-        }
-      }
-    }
+  Object.keys(progress).forEach(name => {
+    const p = progress[name] || {};
+    let broken = false;
+    tiers.forEach(t => {
+      if(!p[t.key]) broken = true;
+      else if(broken){ p[t.key] = false; fixedCount++; }
+    });
   });
   return { progress: progress, fixedCount: fixedCount };
+}
+
+// Keys holding camo progress, which only make sense for the data version
+// they were saved under (see DATA_VERSION in data.js).
+function isProgressDataKey(k){
+  return /^mw4camo-(progress|grindlist|recent)(-|$)/.test(k);
 }
 
 function handleImportFile(file){
@@ -260,18 +256,27 @@ function handleImportFile(file){
       showStatus('Could not read that file \u2014 it may be corrupted.', 'error');
       return;
     }
-    const keys = Object.keys(data).filter(k => k.indexOf(MW4CAMO_PREFIX) === 0);
+    let keys = Object.keys(data).filter(k => k.indexOf(MW4CAMO_PREFIX) === 0);
     if(keys.length === 0){
       showStatus('No recognizable progress data found in that file.', 'error');
       return;
     }
+    // Backups made before launch data existed hold Black Ops 6 weapon names
+    // and placeholder tiers. Restore everything else from them (e.g. Mapfam),
+    // but skip their camo progress rather than writing back invalid data.
+    let skippedOldProgress = false;
+    if(data[MW4CAMO_PREFIX + 'data-version'] !== DATA_VERSION){
+      const before = keys.length;
+      keys = keys.filter(k => !isProgressDataKey(k) && k !== MW4CAMO_PREFIX + 'data-version');
+      skippedOldProgress = keys.length !== before;
+    }
     let fixedCount = 0;
     MODES.forEach(m => {
       const progressKey = MW4CAMO_PREFIX + 'progress-' + m.key;
-      if(data[progressKey]){
+      if(data[progressKey] && keys.includes(progressKey)){
         try{
           const parsed = JSON.parse(data[progressKey]);
-          const result = sanitizeCamoProgress(parsed);
+          const result = sanitizeCamoProgress(parsed, MODE_TIERS[m.key]);
           fixedCount += result.fixedCount;
           data[progressKey] = JSON.stringify(result.progress);
         }catch(err){
@@ -286,8 +291,9 @@ function handleImportFile(file){
       return;
     }
     document.getElementById('fileName').textContent = file.name;
-    const fixedNote = fixedCount ? (' ' + fixedCount + ' invalid tier' + (fixedCount === 1 ? '' : 's') + ' (earned without the required tier below it) were automatically corrected.') : '';
-    showStatus('Progress imported \u2014 ' + keys.length + ' item(s) restored. Visit any page to see it reflected.' + fixedNote, 'success');
+    const fixedNote = fixedCount ? (' ' + fixedCount + ' invalid camo' + (fixedCount === 1 ? '' : 's') + ' (earned without the camo before it) were automatically corrected.') : '';
+    const oldNote = skippedOldProgress ? ' Camo progress in this backup is from the pre-launch placeholder data, so it wasn\u2019t restored.' : '';
+    showStatus('Imported \u2014 ' + keys.length + ' item(s) restored.' + oldNote + fixedNote, keys.length ? 'success' : 'error');
   };
   reader.readAsText(file);
 }
@@ -345,7 +351,7 @@ resetBtn.addEventListener('click', () => {
 });
 
 // ---- TEMPORARY: testing-only button to instantly max every weapon ----
-// Sets every weapon to full Nova (all 4 tiers) for the CURRENT mode only,
+// Sets every weapon to every mastery camo for the CURRENT mode only,
 // pushing that mode's percentages to 100%. Not meant to ship — remove this
 // button, its CSS (.test-section/.test-label/.test-btn), and this handler
 // when done testing.
@@ -353,7 +359,7 @@ const testMaxBtn = document.getElementById('testMaxBtn');
 if(testMaxBtn){
   testMaxBtn.addEventListener('click', () => {
     const modeLabel = getModeInfo(getCurrentMode()).label;
-    if(!confirm('Set every weapon to 100% (Nova) for ' + modeLabel + ' only? This overwrites current progress for that mode.')) return;
+    if(!confirm('Set every weapon to 100% for ' + modeLabel + ' only? This overwrites current progress for that mode.')) return;
     const progress = {};
     WEAPONS.forEach(w => {
       const tiers = {};
@@ -362,7 +368,7 @@ if(testMaxBtn){
     });
     try{
       localStorage.setItem(modeStorageKey('mw4camo-progress'), JSON.stringify(progress));
-      showStatus('All ' + WEAPONS.length + ' weapons set to 100% (Nova) for ' + modeLabel + '. Visit any page to see it reflected.', 'success');
+      showStatus('All ' + WEAPONS.length + ' weapons set to 100% for ' + modeLabel + '. Visit any page to see it reflected.', 'success');
     }catch(e){
       showStatus('Could not save — this browser\'s local storage may be full.', 'error');
     }

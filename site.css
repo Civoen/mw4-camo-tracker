@@ -216,7 +216,10 @@ footer{
 .bar-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;}
 .bar-row:last-child{margin-bottom:0;}
 .bar-label{
-  width:76px;
+  width:160px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
   font-size:10.5px;
   font-weight:700;
   text-transform:uppercase;
@@ -841,7 +844,7 @@ footer{
   .mobile-menu-wrap{display:inline-block;}
   .trader-btn{font-size:13px;padding:10px 14px;}
   h1{font-size:28px;}
-  .bar-label{width:58px;font-size:9.5px;}
+  .bar-label{width:140px;font-size:9.5px;}
   .bar-count{width:32px;font-size:9.5px;}
   .big-pct{font-size:34px;}
   footer{font-size:11.5px;}

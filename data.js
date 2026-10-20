@@ -1,63 +1,44 @@
-// PLACEHOLDER DATA
-// Modern Warfare 4 launches Oct 23, 2026 and its weapon roster / camo challenges
-// haven't been revealed yet. Until they are, this tracker is seeded with the
-// Black Ops 6 launch weapon list (33 weapons) purely as a stand-in structure.
-// Swap WEAPONS and CAMO_TIERS below once real MW4 data is announced.
+// ============================================================
+// MW4 WEAPON + CAMO DATA
+// ============================================================
+// Source: Activision's official Modern Warfare 4 Open Beta Weapons Guide
+// (callofduty.com/guides/mw4/open-beta-weapons). MW4 launches with 33
+// weapons; 22 are officially named so far. The remaining 11 are added here
+// once they're revealed at launch (Oct 23, 2026) — just append them to
+// WEAPONS below. Adding weapons never affects existing progress.
 
 const WEAPONS = [
   // Assault Rifles
-  { name: 'XM4', class: 'Assault Rifle' },
-  { name: 'AK-74', class: 'Assault Rifle' },
-  { name: 'AMES 85', class: 'Assault Rifle' },
-  { name: 'GPR 91', class: 'Assault Rifle' },
-  { name: 'Model L', class: 'Assault Rifle' },
-  { name: 'Goblin Mk2', class: 'Assault Rifle' },
-  { name: 'AS VAL', class: 'Assault Rifle' },
+  { name: 'Han 86', class: 'Assault Rifle' },
+  { name: 'M4', class: 'Assault Rifle' },
+  { name: 'Hyeon Burst', class: 'Assault Rifle' },
+  { name: 'Kastov 762', class: 'Assault Rifle' },
+  { name: 'Patriot XMR', class: 'Assault Rifle' },
+  { name: 'Axion', class: 'Assault Rifle' },
   // SMGs
-  { name: 'C9', class: 'SMG' },
-  { name: 'KSV', class: 'SMG' },
-  { name: 'Tanto .22', class: 'SMG' },
-  { name: 'PP-919', class: 'SMG' },
-  { name: 'Jackal PDW', class: 'SMG' },
-  { name: 'Kompakt 92', class: 'SMG' },
+  { name: 'ISO Nightshade', class: 'SMG' },
+  { name: 'PPSh-41', class: 'SMG' },
+  { name: 'X-58 Nyx', class: 'SMG' },
+  { name: 'Wz. 55 Striga', class: 'SMG' },
   // Shotguns
-  { name: 'Marine SP', class: 'Shotgun' },
-  { name: 'ASG-89', class: 'Shotgun' },
+  { name: 'Rezi 12', class: 'Shotgun' },
   // LMGs
-  { name: 'XMG', class: 'LMG' },
-  { name: 'PU-21', class: 'LMG' },
-  { name: 'GPMG-7', class: 'LMG' },
+  { name: 'FiNN LMG', class: 'LMG' },
+  { name: 'Type 73', class: 'LMG' },
   // Marksman Rifles
-  { name: 'SWAT 5.56', class: 'Marksman Rifle' },
-  { name: 'Tsarkov 7.62', class: 'Marksman Rifle' },
-  { name: 'AEK-973', class: 'Marksman Rifle' },
-  { name: 'DM-10', class: 'Marksman Rifle' },
+  { name: 'MAR-9', class: 'Marksman Rifle' },
+  { name: 'Oris 8.6', class: 'Marksman Rifle' },
   // Sniper Rifles
-  { name: 'LW3A1 Frostline', class: 'Sniper Rifle' },
-  { name: 'SVD', class: 'Sniper Rifle' },
-  { name: 'LR 7.62', class: 'Sniper Rifle' },
+  { name: 'KG-7 Vulcan', class: 'Sniper Rifle' },
+  { name: 'Signal .50', class: 'Sniper Rifle' },
   // Pistols
-  { name: 'GS45', class: 'Pistol' },
-  { name: '9mm PM', class: 'Pistol' },
-  { name: 'Grekhova', class: 'Pistol' },
-  { name: 'Stryder .22', class: 'Pistol' },
+  { name: 'Karit P68', class: 'Pistol' },
+  { name: '.50 GS', class: 'Pistol' },
+  { name: 'Sang 9mm', class: 'Pistol' },
   // Launchers
-  { name: 'Launcher (Lock-On)', class: 'Launcher' },
-  { name: 'Launcher (Free-Fire)', class: 'Launcher' },
+  { name: 'PILA', class: 'Launcher' },
   // Melee
-  { name: 'Combat Knife', class: 'Melee' },
-  { name: 'Baseball Bat', class: 'Melee' }
-];
-
-// Sequential mastery tiers. "Onyx" and "Nova" are placeholder names standing
-// in for whatever MW4's actual top-tier camos turn out to be called.
-// `color` drives both the tier-line progress bar and the checklist styling —
-// update it here (not in CSS) when real tier names/colors are announced.
-const CAMO_TIERS = [
-  { key: 'gold', label: 'Gold', color: 'var(--gold)' },
-  { key: 'platinum', label: 'Platinum', color: '#c9f1f0' },
-  { key: 'onyx', label: 'Onyx', color: '#a8a9ab' },
-  { key: 'nova', label: 'Nova', color: '#ffffff' }
+  { name: 'Combat Knife', class: 'Melee' }
 ];
 
 const WEAPON_CLASSES = [...new Set(WEAPONS.map(w => w.class))];
@@ -85,20 +66,15 @@ function classLabel(cls){
 // TRACKER MODES
 // ============================================================
 // Multiplayer, Warzone, and DMZ are tracked as fully independent progress
-// tracks — completing a weapon's Gold in Multiplayer says nothing about its
-// Warzone or DMZ progress. They share the same weapon roster (WEAPONS
-// above) and, for now, the same CAMO_TIERS — real per-mode tier names and
-// colors aren't known yet, so all three point at the identical tier list
-// until MW4 reveals otherwise.
+// tracks. They share the same weapon roster but each has its own three
+// Mastery Camos (MODE_TIERS below).
 //
 // `accent` drives the mode switcher, the eyebrow badge background, and any
-// other mode-specific UI coloring. Multiplayer intentionally reuses the
-// site's existing gold rather than getting its own hex, since gold is
-// MW4's actual brand color, not just a placeholder.
+// other mode-specific UI coloring. All three use the site gold for now.
 const MODES = [
   { key: 'mp', label: 'Multiplayer', accent: 'var(--gold)' },
-  { key: 'wz', label: 'Warzone', accent: 'var(--gold)' }, // was #CF5302 — reverted to gold, revisit if needed
-  { key: 'dmz', label: 'DMZ', accent: 'var(--gold)' } // was #4FB9AF — reverted to gold, revisit if needed
+  { key: 'wz', label: 'Warzone', accent: 'var(--gold)' },
+  { key: 'dmz', label: 'DMZ', accent: 'var(--gold)' }
 ];
 
 const MODE_KEY_STORAGE = 'mw4camo-mode';
@@ -134,3 +110,58 @@ function applyModeAccent(){
   document.documentElement.style.setProperty('--mode-accent', mode.accent);
   document.querySelectorAll('.mode-badge').forEach(el => { el.textContent = mode.label; });
 }
+
+// ============================================================
+// MASTERY CAMOS (per mode)
+// ============================================================
+// Names and order are official (revealed at Call of Duty: NEXT, Aug 2026);
+// each weapon's camos unlock in this order within a mode. The challenge
+// requirements aren't published yet — they go live at launch.
+//
+// Colors are NOT official: they're picked to suggest each camo and stay
+// readable on the dark UI. The top tier in every mode is white on purpose,
+// so a fully mastered weapon/class/scope reads the same everywhere.
+//
+// Not tracked yet: the shared per-weapon Camo Track that comes before
+// mastery (contents unpublished) and the Prestige camos (Pyroclast etc.).
+const MODE_TIERS = {
+  mp: [
+    { key: 'mercurial-drift', label: 'Mercurial Drift', color: '#c3ccd6' },
+    { key: 'polyatomic-reforged', label: 'Polyatomic Reforged', color: '#a77df2' },
+    { key: 'orion-reforged', label: 'Orion Reforged', color: '#ffffff' }
+  ],
+  wz: [
+    { key: 'parallax', label: 'Parallax', color: '#e8833a' },
+    { key: 'damascus-reforged', label: 'Damascus Reforged', color: '#9aa0a6' },
+    { key: 'empyros', label: 'Empyros', color: '#ffffff' }
+  ],
+  dmz: [
+    { key: 'chiral', label: 'Chiral', color: '#5cc8b8' },
+    { key: 'ripple-tide', label: 'Ripple Tide', color: '#4f8fe6' },
+    { key: 'helio', label: 'Helio', color: '#ffffff' }
+  ]
+};
+
+// The active mode's tiers. Switching mode reloads the page, so resolving
+// this once at load is enough — every page reads CAMO_TIERS directly.
+const CAMO_TIERS = MODE_TIERS[getCurrentMode()];
+
+// ============================================================
+// ONE-TIME RESET OF PLACEHOLDER DATA
+// ============================================================
+// Before launch data existed, progress was stored against Black Ops 6
+// weapon names and Gold/Platinum/Onyx/Nova tiers. None of that matches the
+// real MW4 data, so it's cleared once. Mapfam images and the chosen mode
+// are kept. Bump DATA_VERSION only for changes that genuinely invalidate
+// stored progress (adding weapons does not).
+const DATA_VERSION = '2';
+(function(){
+  try{
+    if(localStorage.getItem('mw4camo-data-version') === DATA_VERSION) return;
+    ['mw4camo-progress', 'mw4camo-grindlist', 'mw4camo-recent'].forEach(base => {
+      localStorage.removeItem(base);
+      MODES.forEach(m => localStorage.removeItem(base + '-' + m.key));
+    });
+    localStorage.setItem('mw4camo-data-version', DATA_VERSION);
+  }catch(e){}
+})();

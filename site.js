@@ -39,34 +39,6 @@ function tierCompleteForWeapons(weaponsArr, tierKey, progress){
   return weaponsArr.length > 0 && weaponsArr.every(w => (progress[w.name] || {})[tierKey]);
 }
 
-// True once every weapon in `cls` has tier `tierKey` checked. Mastery camo
-// tiers beyond Gold are gated at the class level (e.g. no weapon can start
-// Platinum until every weapon in its class has Gold) rather than per-weapon.
-function classTierComplete(cls, tierKey, progress){
-  return tierCompleteForWeapons(WEAPONS.filter(w => w.class === cls), tierKey, progress);
-}
-
-// Re-validates an entire class's progress after a tier gets unchecked.
-// Unchecking Gold on one weapon means Platinum was never legitimately
-// attainable for the whole class (every weapon needs Gold first) — so any
-// weapon in the class already holding Platinum or higher has it stripped
-// too. This cascades tier by tier: if that strip also breaks Platinum's
-// class-wide completeness, Onyx gets stripped next, and so on up to Nova.
-function enforceClassGating(cls, progress){
-  const weapons = WEAPONS.filter(w => w.class === cls);
-  for(let i = 1; i < CAMO_TIERS.length; i++){
-    const prevKey = CAMO_TIERS[i - 1].key;
-    if(!tierCompleteForWeapons(weapons, prevKey, progress)){
-      for(let j = i; j < CAMO_TIERS.length; j++){
-        const key = CAMO_TIERS[j].key;
-        weapons.forEach(w => {
-          if(progress[w.name]) progress[w.name][key] = false;
-        });
-      }
-    }
-  }
-}
-
 // The color of the highest tier that's fully complete across every weapon
 // in `weaponsArr` (used to recolor a class tile once, say, all Gold is in).
 // Returns null if not even the first tier is fully complete yet.
@@ -79,11 +51,14 @@ function highestCompleteTierColor(weaponsArr, progress){
   return color;
 }
 
-// Whether a given tier is unlocked for a specific weapon right now.
+// Whether a given tier is unlocked for a specific weapon right now. MW4's
+// mastery camos unlock in order per weapon: a camo needs the one before it
+// on the same weapon, nothing else. (No class-wide requirement has been
+// confirmed for MW4; if launch shows one, this is the only place to change.)
 function tierUnlocked(weapon, tierIndex, progress){
-  if(tierIndex === 0) return true; // Gold has no prerequisite
+  if(tierIndex === 0) return true; // first mastery camo has no prerequisite
   const prevTier = CAMO_TIERS[tierIndex - 1];
-  return classTierComplete(weapon.class, prevTier.key, progress);
+  return !!(progress[weapon.name] || {})[prevTier.key];
 }
 
 function nextTierLabel(name){
@@ -94,10 +69,9 @@ function nextTierLabel(name){
 }
 
 // Checks the next available tier for a weapon (used by the "Next Camo"
-// button in the Grind List). Respects the same class-wide gate as the
-// checklist on the Camo Tracker page — a weapon can't advance to Platinum
-// until every weapon in its class has Gold, and so on up the tiers. No-ops
-// if the next tier is locked or the weapon is already fully mastered.
+// button in the Grind List). Uses the same tierUnlocked() rule as the
+// checklist on the Camo Tracker page. No-ops if the next tier is locked or
+// the weapon is already fully mastered.
 function advanceNextTier(name){
   const weapon = weaponLookup(name);
   const progress = loadCamoProgress();
@@ -621,7 +595,7 @@ function initCamoChecklist(config){
     // The headline number's color tracks the highest tier anyone in this
     // scope has started earning — gold by default, then platinum, onyx,
     // and finally nova as soon as any weapon reaches each stage.
-    let activeColor = CAMO_TIERS[0].color;
+    let activeColor = 'var(--gold)'; // site gold until a camo is earned
     for(let i = CAMO_TIERS.length - 1; i >= 0; i--){
       if(tierStats[i].done > 0){ activeColor = CAMO_TIERS[i].color; break; }
     }
@@ -700,10 +674,6 @@ function initCamoChecklist(config){
         if(!box.checked){
           const idx = CAMO_TIERS.findIndex(t => t.key === tier);
           CAMO_TIERS.slice(idx + 1).forEach(t => { progress[name][t.key] = false; });
-          // It can also invalidate tiers already earned on OTHER weapons in
-          // the same class, since higher tiers require every weapon to have
-          // cleared the one below first.
-          enforceClassGating(weaponLookup(name).class, progress);
         }
         saveCamoProgress(progress);
         if(box.checked) logCamoChange(name, tier);

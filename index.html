@@ -142,7 +142,7 @@ initProgressCardButton('downloadProgressCard');
 (function(){
   const progress = loadCamoProgress();
   // Counts every camo tier earned across every weapon (not just fully
-  // mastered weapons) so a single Gold pickup moves this bar.
+  // mastered weapons) so a single camo pickup moves this bar.
   const totalPossible = WEAPONS.length * CAMO_TIERS.length;
   let earned = 0;
   const tierDone = CAMO_TIERS.map(() => 0);
@@ -154,7 +154,7 @@ initProgressCardButton('downloadProgressCard');
 
   // Same "highest tier anyone has started" color cycling as the Camo
   // Tracker page, just scoped across every weapon class instead of one.
-  let activeColor = CAMO_TIERS[0].color;
+  let activeColor = 'var(--gold)'; // site gold until a camo is earned
   for(let i = CAMO_TIERS.length - 1; i >= 0; i--){
     if(tierDone[i] > 0){ activeColor = CAMO_TIERS[i].color; break; }
   }

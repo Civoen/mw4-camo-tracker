@@ -74,7 +74,7 @@ async function generateProgressCardCanvas(){
   });
   const pct = totalPossible ? Math.round((earned / totalPossible) * 100) : 0;
 
-  let activeColor = pcTierHex(CAMO_TIERS[0]);
+  let activeColor = '#fecf41'; // site gold until a camo is earned
   for(let i = CAMO_TIERS.length - 1; i >= 0; i--){
     if(tierDone[i] > 0){ activeColor = pcTierHex(CAMO_TIERS[i]); break; }
   }
@@ -108,7 +108,7 @@ async function generateProgressCardCanvas(){
 
   let y = PAD;
 
-  // ---- Header: wordmark + placeholder badge ----
+  // ---- Header: wordmark + current mode badge ----
   ctx.textBaseline = 'alphabetic';
   ctx.textAlign = 'left';
   ctx.fillStyle = PC_COLORS.paper;
@@ -121,7 +121,7 @@ async function generateProgressCardCanvas(){
   ctx.drawImage(glyphImg, PAD + mwWidth - 14, titleBaseline - 34, glyphW, glyphH);
   ctx.fillText('Camo Tracker', PAD + mwWidth - 14 + glyphW - 2, titleBaseline);
 
-  const badgeText = 'PLACEHOLDER DATA';
+  const badgeText = getModeInfo(getCurrentMode()).label.toUpperCase();
   ctx.font = '700 13px Barlow';
   const badgeTextW = ctx.measureText(badgeText).width;
   const badgePadX = 16, badgeH = 38;

@@ -31,7 +31,7 @@ function computeStats(){
   const overallPct = totalPossible ? Math.round((earned / totalPossible) * 100) : 0;
   const masteredWeapons = WEAPONS.filter(w => isWeaponMastered(w.name, progress));
 
-  let activeColor = CAMO_TIERS[0].color;
+  let activeColor = 'var(--gold)'; // site gold until a camo is earned
   for(let i = CAMO_TIERS.length - 1; i >= 0; i--){
     if(tierCounts[i] > 0){ activeColor = CAMO_TIERS[i].color; break; }
   }
@@ -101,8 +101,8 @@ function computeStats(){
   const masteryTimes = [];
   masteredWeapons.forEach(w => {
     const entries = sortedLog.filter(e => e.name === w.name);
-    const goldEntry = entries.find(e => e.tierKey === 'gold');
-    const novaEntry = entries.slice().reverse().find(e => e.tierKey === 'nova');
+    const goldEntry = entries.find(e => e.tierKey === CAMO_TIERS[0].key);
+    const novaEntry = entries.slice().reverse().find(e => e.tierKey === CAMO_TIERS[CAMO_TIERS.length - 1].key);
     if(goldEntry && novaEntry && novaEntry.ts >= goldEntry.ts){
       masteryTimes.push({
         name: w.name,
@@ -164,7 +164,8 @@ function buildCumulativeChartSVG(series, accentColor){
   const labelIdxs = n === 1 ? [0] : [0, Math.floor((n - 1) / 2), n - 1];
   const xLabels = labelIdxs.map(i => {
     const p = points[i];
-    return '<text x="' + p[0].toFixed(1) + '" y="' + (H - 10) + '" text-anchor="middle" font-size="11" fill="#948e84" font-family="Barlow, sans-serif">' + formatStatDate(series[i].date) + '</text>';
+    const anchor = (i === 0 && n > 1) ? 'start' : (i === n - 1 && n > 1) ? 'end' : 'middle';
+    return '<text x="' + p[0].toFixed(1) + '" y="' + (H - 10) + '" text-anchor="' + anchor + '" font-size="11" fill="#948e84" font-family="Barlow, sans-serif">' + formatStatDate(series[i].date) + '</text>';
   }).join('');
 
   return '<svg viewBox="0 0 ' + W + ' ' + H + '" class="stats-chart-svg" preserveAspectRatio="xMidYMid meet">' +
@@ -218,7 +219,7 @@ function renderStatsPage(containerId){
     '<div class="stats-tier-grid">' +
       CAMO_TIERS.map((t, i) => {
         const pct = WEAPONS.length ? Math.round((s.tierCounts[i] / WEAPONS.length) * 100) : 0;
-        const color = t.color === 'var(--gold)' ? 'var(--gold)' : t.color;
+        const color = t.color;
         return '<div class="stats-tier-card"><div class="stats-tier-bar-track"><div class="stats-tier-bar-fill" style="width:' + pct + '%;background:' + color + ';"></div></div>' +
           '<div class="stats-tier-row"><span>' + t.label + '</span><span>' + s.tierCounts[i] + '/' + WEAPONS.length + '</span></div></div>';
       }).join('') +
@@ -245,10 +246,10 @@ function renderStatsPage(containerId){
       ? '<div class="stats-milestone-grid">' +
           '<div class="stats-milestone"><div class="stats-milestone-label">First Weapon Mastered</div><div class="stats-milestone-value">' + s.masteryTimes[0].name + '</div><div class="stats-milestone-sub">' + formatStatDate(s.masteryTimes[0].masteredAt) + '</div></div>' +
           '<div class="stats-milestone"><div class="stats-milestone-label">Most Recent Mastery</div><div class="stats-milestone-value">' + s.masteryTimes[s.masteryTimes.length - 1].name + '</div><div class="stats-milestone-sub">' + formatStatDate(s.masteryTimes[s.masteryTimes.length - 1].masteredAt) + '</div></div>' +
-          '<div class="stats-milestone"><div class="stats-milestone-label">Fastest Mastery</div><div class="stats-milestone-value">' + s.masteryTimes.slice().sort((a, b) => a.days - b.days)[0].name + '</div><div class="stats-milestone-sub">' + s.masteryTimes.slice().sort((a, b) => a.days - b.days)[0].days + ' day(s) Gold\u2192Nova</div></div>' +
-          '<div class="stats-milestone"><div class="stats-milestone-label">Slowest Mastery</div><div class="stats-milestone-value">' + s.masteryTimes.slice().sort((a, b) => b.days - a.days)[0].name + '</div><div class="stats-milestone-sub">' + s.masteryTimes.slice().sort((a, b) => b.days - a.days)[0].days + ' day(s) Gold\u2192Nova</div></div>' +
+          '<div class="stats-milestone"><div class="stats-milestone-label">Fastest Mastery</div><div class="stats-milestone-value">' + s.masteryTimes.slice().sort((a, b) => a.days - b.days)[0].name + '</div><div class="stats-milestone-sub">' + s.masteryTimes.slice().sort((a, b) => a.days - b.days)[0].days + ' day(s) ' + CAMO_TIERS[0].label + '\u2192' + CAMO_TIERS[CAMO_TIERS.length - 1].label + '</div></div>' +
+          '<div class="stats-milestone"><div class="stats-milestone-label">Slowest Mastery</div><div class="stats-milestone-value">' + s.masteryTimes.slice().sort((a, b) => b.days - a.days)[0].name + '</div><div class="stats-milestone-sub">' + s.masteryTimes.slice().sort((a, b) => b.days - a.days)[0].days + ' day(s) ' + CAMO_TIERS[0].label + '\u2192' + CAMO_TIERS[CAMO_TIERS.length - 1].label + '</div></div>' +
         '</div>'
-      : '<div class="empty-note">No fully-mastered weapons with recorded Gold-to-Nova timestamps yet.</div>') +
+      : '<div class="empty-note">No fully-mastered weapons with recorded first-to-last mastery camo timestamps yet.</div>') +
   '</section>';
 
   el.innerHTML = overviewHtml + chartHtml + habitsHtml + tierHtml + classHtml + milestonesHtml;
