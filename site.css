@@ -228,7 +228,7 @@ footer{
   flex-shrink:0;
 }
 .bar-track{flex:1;height:9px;background:var(--panel-2);border:1px solid var(--line);position:relative;min-width:60px;}
-.bar-fill{height:100%;}
+.bar-fill{height:100%;width:100%;transform-origin:left center;transition:transform .45s cubic-bezier(.2,.7,.2,1);}
 .bar-count{width:42px;text-align:right;font-size:10.5px;color:var(--dim);flex-shrink:0;}
 
 /* ---- Weapon grid / swatch cards ---- */
@@ -253,6 +253,7 @@ footer{
 .weapon-card{
   position:relative;
   background:var(--card-border, var(--line));
+  transition:background-color .3s ease;
   padding:1px;
   cursor:pointer;
   clip-path:polygon(0 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%);
@@ -356,7 +357,7 @@ footer{
 .undo-toast{
   position:fixed;
   left:50%;
-  bottom:24px;
+  bottom:80px; /* sits above the Currently Grinding bar */
   transform:translateX(-50%) translateY(20px);
   z-index:80;
   display:flex;
@@ -1070,4 +1071,47 @@ body.grindlist-fullscreen > .hero{
   .grind-item-name{font-size:13px;}
   .grind-item-sub{font-size:9.5px;}
   .grind-item-view, .grind-item-next, .grind-item-remove{font-size:9px;padding:4px 8px;}
+}
+
+
+/* ---- Motion ----
+   Every animation here plays once, in response to an action (or once on
+   load). Nothing loops, so the site costs nothing while sitting idle next
+   to the game. Only transform, opacity and colour are animated. */
+.weapon-card.pinned:before{z-index:2;}
+@keyframes chip-pop{
+  0%{transform:scale(.85);}
+  60%{transform:scale(1.06);}
+  100%{transform:scale(1);}
+}
+.swatch-chip.chip-pop{animation:chip-pop .22s ease-out;}
+
+@keyframes mastery-sweep{
+  from{transform:translateX(-100%);}
+  to{transform:translateX(100%);}
+}
+.weapon-card.mastery-sweep .card-inner,
+.class-tile.mastery-sweep .card-inner{position:relative;}
+.weapon-card.mastery-sweep .card-inner::after,
+.class-tile.mastery-sweep .card-inner::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:linear-gradient(105deg, transparent 30%, rgba(255,255,255,.22) 50%, transparent 70%);
+  transform:translateX(-100%);
+  animation:mastery-sweep .9s ease-out .1s 1 forwards;
+}
+
+@keyframes panel-in{
+  from{opacity:0;transform:translateY(8px);}
+  to{opacity:1;transform:none;}
+}
+.grind-list.open .grind-list-panel{animation:panel-in .18s ease-out;}
+
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation:none !important;
+    transition:none !important;
+  }
 }

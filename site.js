@@ -2,6 +2,52 @@
 // mode-aware styling stay correct regardless of which page you land on.
 applyModeAccent();
 
+// ---- Motion ----
+// The site is often open alongside the game, so every animation here is a
+// one-off reaction to something the user did (or a single play on load):
+// nothing loops, and only transform/opacity/colour are animated. With the
+// OS "reduce motion" setting on, CSS strips the animations (see site.css)
+// and the JS-driven ones below skip themselves.
+const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+// Runs fn after the browser has painted the current state, so a CSS
+// transition sees a real "before" value to animate from.
+function afterPaint(fn){
+  requestAnimationFrame(() => requestAnimationFrame(fn));
+}
+
+// Counts an element's leading "NN%" text up from 0 once (homepage headline).
+function countUpPercent(el, target, duration){
+  if(!el || !el.firstChild || REDUCED_MOTION || target <= 0) return;
+  const node = el.firstChild;
+  const ms = duration || 600;
+  const start = performance.now();
+  function step(now){
+    const t = Math.min(1, (now - start) / ms);
+    const eased = 1 - Math.pow(1 - t, 3);
+    node.textContent = Math.round(target * eased) + '%';
+    if(t < 1) requestAnimationFrame(step);
+  }
+  node.textContent = '0%';
+  requestAnimationFrame(step);
+}
+
+// Plays the mastery sweep once per milestone: the first time a tile shows
+// as 100% in this mode. Dropping below 100% re-arms it.
+const CELEBRATED_KEY = 'mw4camo-celebrated';
+function celebrateNewMilestones(tileEls){
+  let seen = [];
+  try{ seen = JSON.parse(localStorage.getItem(modeStorageKey(CELEBRATED_KEY)) || '[]'); }catch(e){}
+  const next = [];
+  tileEls.forEach(el => {
+    const id = el.getAttribute('data-tile');
+    if(!el.classList.contains('maxed')) return;
+    next.push(id);
+    if(!seen.includes(id)) el.classList.add('mastery-sweep');
+  });
+  try{ localStorage.setItem(modeStorageKey(CELEBRATED_KEY), JSON.stringify(next)); }catch(e){}
+}
+
 // ---- Shared progress helpers ----
 function loadCamoProgress(){
   try{
@@ -525,7 +571,7 @@ function renderClassSummary(containerId){
     const maxed = total > 0 && count === total;
     const color = highestCompleteTierColor(weaponsInScope, progress);
     const styleAttr = (!maxed && color) ? ' style="--tile-border:' + color + '"' : '';
-    return '<a class="class-tile'+(maxed ? ' maxed' : '')+'" href="'+href+'"'+styleAttr+'>' +
+    return '<a class="class-tile'+(maxed ? ' maxed' : '')+'" data-tile="'+label+'" href="'+href+'"'+styleAttr+'>' +
       '<span class="card-inner">' +
         '<span class="class-tile-name">'+label+'</span>' +
         '<span class="class-tile-count">'+count+'/'+total+'</span>' +
@@ -543,6 +589,7 @@ function renderClassSummary(containerId){
   });
 
   el.innerHTML = html;
+  celebrateNewMilestones(el.querySelectorAll('.class-tile'));
 }
 
 // ---- Camo checklist renderer (per-weapon, sequential/class-gated tiers) ----
@@ -550,6 +597,29 @@ function renderClassSummary(containerId){
 function initCamoChecklist(config){
   const listEl = document.getElementById(config.listElId);
   let progress = loadCamoProgress();
+  const prevBarPct = {}; // last drawn % per tier, so bars glide between values
+
+  // The grid is rebuilt on every change, so the changed card is a brand new
+  // element. These effects start it from its old look and let CSS animate
+  // to the new one: swatch pop on tick, outline colour fade, and a single
+  // sweep when the weapon's final camo lands.
+  function animateCardChange(name, tierKey, checked, oldColor){
+    if(REDUCED_MOTION) return;
+    const card = [...listEl.querySelectorAll('.weapon-card')].find(c => c.getAttribute('data-name') === name);
+    if(!card) return;
+    if(checked){
+      const input = card.querySelector('input[data-tier="' + tierKey + '"]');
+      const chip = input && input.nextElementSibling;
+      if(chip) chip.classList.add('chip-pop');
+      if(tierKey === CAMO_TIERS[CAMO_TIERS.length - 1].key) card.classList.add('mastery-sweep');
+    }
+    const newColor = card.style.getPropertyValue('--card-border');
+    card.style.setProperty('--card-border', oldColor || 'var(--line)');
+    afterPaint(() => {
+      if(newColor) card.style.setProperty('--card-border', newColor);
+      else card.style.removeProperty('--card-border');
+    });
+  }
 
   const params = new URLSearchParams(window.location.search);
   const requestedClass = params.get('class');
@@ -605,13 +675,21 @@ function initCamoChecklist(config){
       bigPct.style.color = activeColor;
     }
     if(bars){
+      // Each fill is drawn at its previous value, then scaled to the new
+      // one after paint, so it glides rather than jumps (transform only).
       bars.innerHTML = tierStats.map(s =>
         '<div class="bar-row">' +
           '<div class="bar-label">' + s.tier.label + '</div>' +
-          '<div class="bar-track"><div class="bar-fill" style="width:' + s.pct + '%;background:' + s.tier.color + ';"></div></div>' +
+          '<div class="bar-track"><div class="bar-fill" data-pct="' + s.pct + '" style="transform:scaleX(' + ((prevBarPct[s.tier.key] || 0) / 100) + ');background:' + s.tier.color + ';"></div></div>' +
           '<div class="bar-count">' + s.done + '/' + total + '</div>' +
         '</div>'
       ).join('');
+      tierStats.forEach(s => { prevBarPct[s.tier.key] = s.pct; });
+      afterPaint(() => {
+        bars.querySelectorAll('.bar-fill').forEach(f => {
+          f.style.transform = 'scaleX(' + (Number(f.getAttribute('data-pct')) / 100) + ')';
+        });
+      });
     }
 
     // Progress block's own outline: gold once the whole scope has Gold,
@@ -667,18 +745,42 @@ function initCamoChecklist(config){
       box.addEventListener('change', () => {
         const name = box.getAttribute('data-name');
         const tier = box.getAttribute('data-tier');
+        const checked = box.checked;
+        const before = Object.assign({}, progress[name] || {});
+        const oldColor = highestOwnTierColor(name, progress);
         if(!progress[name]) progress[name] = {};
-        progress[name][tier] = box.checked;
+        progress[name][tier] = checked;
         // Unchecking a tier also clears any tiers that come after it for
         // THIS weapon, since tiers are sequential per weapon.
-        if(!box.checked){
+        if(!checked){
           const idx = CAMO_TIERS.findIndex(t => t.key === tier);
           CAMO_TIERS.slice(idx + 1).forEach(t => { progress[name][t.key] = false; });
         }
         saveCamoProgress(progress);
-        if(box.checked) logCamoChange(name, tier);
+        if(checked) logCamoChange(name, tier);
         renderGrindList(); // keep "Next: X" labels in the Grind List current
         render();
+        animateCardChange(name, tier, checked, oldColor);
+
+        // Unticking can clear up to three camos in one click, so offer an
+        // undo. The change is already saved; Undo puts the weapon back
+        // exactly as it was.
+        if(!checked){
+          const lost = CAMO_TIERS.filter(t => before[t.key]).map(t => t.label);
+          if(lost.length){
+            showUndoToast(
+              (lost.length === 1 ? 'Removed ' + lost[0] : 'Removed ' + lost.length + ' camos') + ' from ' + name,
+              () => {},
+              () => {
+                progress = loadCamoProgress();
+                progress[name] = before;
+                saveCamoProgress(progress);
+                renderGrindList();
+                render();
+              }
+            );
+          }
+        }
       });
     });
     listEl.querySelectorAll('.tier-swatch').forEach(label => {

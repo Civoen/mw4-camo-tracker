@@ -163,6 +163,7 @@ initProgressCardButton('downloadProgressCard');
   const homeProgressLink = document.querySelector('.progress-block-link');
   const isMaxed = pct === 100;
   homeBigPct.innerHTML = pct + '%<span>Overall Progress &middot; ' + earned + ' of ' + totalPossible + ' camos earned</span>';
+  countUpPercent(homeBigPct, pct);
   homeBigPct.style.color = isMaxed ? '' : activeColor; // let the .maxed CSS rule take over at 100%
   if(homeProgressLink) homeProgressLink.classList.toggle('maxed', isMaxed);
 })();
