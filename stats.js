@@ -7,8 +7,8 @@
 //     how progress was set.
 //   - loadRecentLog() is the ONLY source with timestamps, so it drives
 //     everything date/time-based (streaks, the chart, mastery duration).
-//     It's capped at 200 entries, comfortably above the 132 tiers a mode
-//     can ever hold (33 weapons x 4 tiers), so it holds complete history
+//     It's capped at 200 entries, comfortably above the 99 weapon camos
+//     that can ever be logged (33 weapons x 3 tiers), so it holds complete history
 //     unless it's been manually cleared. One gap worth knowing: the
 //     Manage Data "100% test" button and individual Recent removals don't
 //     go through the normal log path, so time-based stats reflect
@@ -185,10 +185,10 @@ function renderStatsPage(containerId){
 
   const overviewHtml =
     '<div class="stats-overview">' +
-      '<div class="stats-hero-pct" style="color:' + s.activeColor + '">' + s.overallPct + '%<span>Overall Progress \u00b7 ' + modeLabel + '</span></div>' +
+      '<div class="stats-hero-pct" style="color:' + s.activeColor + '">' + s.overallPct + '%<span>Weapon Camos \u00b7 All Modes</span></div>' +
       '<div class="stats-mini-grid">' +
         '<div class="stats-mini"><div class="stats-mini-value">' + s.earned + ' / ' + s.totalPossible + '</div><div class="stats-mini-label">Camos Earned</div></div>' +
-        '<div class="stats-mini"><div class="stats-mini-value">' + s.masteredWeapons.length + ' / ' + WEAPONS.length + '</div><div class="stats-mini-label">Weapons Mastered</div></div>' +
+        '<div class="stats-mini"><div class="stats-mini-value">' + s.masteredWeapons.length + ' / ' + WEAPONS.length + '</div><div class="stats-mini-label">Weapons Completed</div></div>' +
         '<div class="stats-mini"><div class="stats-mini-value">' + s.daysActive + '</div><div class="stats-mini-label">Days Active</div></div>' +
         '<div class="stats-mini"><div class="stats-mini-value">' + s.currentStreak + '</div><div class="stats-mini-label">Current Streak</div></div>' +
       '</div>' +
@@ -234,7 +234,7 @@ function renderStatsPage(containerId){
           '<span class="stats-class-name">' + c.label + '</span>' +
           '<div class="stats-class-bar-track"><div class="stats-class-bar-fill" style="width:' + c.pct + '%;"></div></div>' +
           '<span class="stats-class-pct">' + c.pct + '%</span>' +
-          '<span class="stats-class-count">' + c.masteredCount + '/' + c.total + ' mastered</span>' +
+          '<span class="stats-class-count">' + c.masteredCount + '/' + c.total + ' completed</span>' +
         '</div>'
       ).join('') +
     '</div>' +
@@ -244,12 +244,12 @@ function renderStatsPage(containerId){
     '<h2>Milestones</h2>' +
     (s.masteryTimes.length
       ? '<div class="stats-milestone-grid">' +
-          '<div class="stats-milestone"><div class="stats-milestone-label">First Weapon Mastered</div><div class="stats-milestone-value">' + s.masteryTimes[0].name + '</div><div class="stats-milestone-sub">' + formatStatDate(s.masteryTimes[0].masteredAt) + '</div></div>' +
-          '<div class="stats-milestone"><div class="stats-milestone-label">Most Recent Mastery</div><div class="stats-milestone-value">' + s.masteryTimes[s.masteryTimes.length - 1].name + '</div><div class="stats-milestone-sub">' + formatStatDate(s.masteryTimes[s.masteryTimes.length - 1].masteredAt) + '</div></div>' +
-          '<div class="stats-milestone"><div class="stats-milestone-label">Fastest Mastery</div><div class="stats-milestone-value">' + s.masteryTimes.slice().sort((a, b) => a.days - b.days)[0].name + '</div><div class="stats-milestone-sub">' + s.masteryTimes.slice().sort((a, b) => a.days - b.days)[0].days + ' day(s) ' + CAMO_TIERS[0].label + '\u2192' + CAMO_TIERS[CAMO_TIERS.length - 1].label + '</div></div>' +
-          '<div class="stats-milestone"><div class="stats-milestone-label">Slowest Mastery</div><div class="stats-milestone-value">' + s.masteryTimes.slice().sort((a, b) => b.days - a.days)[0].name + '</div><div class="stats-milestone-sub">' + s.masteryTimes.slice().sort((a, b) => b.days - a.days)[0].days + ' day(s) ' + CAMO_TIERS[0].label + '\u2192' + CAMO_TIERS[CAMO_TIERS.length - 1].label + '</div></div>' +
+          '<div class="stats-milestone"><div class="stats-milestone-label">First Weapon Completed</div><div class="stats-milestone-value">' + s.masteryTimes[0].name + '</div><div class="stats-milestone-sub">' + formatStatDate(s.masteryTimes[0].masteredAt) + '</div></div>' +
+          '<div class="stats-milestone"><div class="stats-milestone-label">Most Recent Completion</div><div class="stats-milestone-value">' + s.masteryTimes[s.masteryTimes.length - 1].name + '</div><div class="stats-milestone-sub">' + formatStatDate(s.masteryTimes[s.masteryTimes.length - 1].masteredAt) + '</div></div>' +
+          '<div class="stats-milestone"><div class="stats-milestone-label">Fastest Completion</div><div class="stats-milestone-value">' + s.masteryTimes.slice().sort((a, b) => a.days - b.days)[0].name + '</div><div class="stats-milestone-sub">' + s.masteryTimes.slice().sort((a, b) => a.days - b.days)[0].days + ' day(s) ' + CAMO_TIERS[0].label + '\u2192' + CAMO_TIERS[CAMO_TIERS.length - 1].label + '</div></div>' +
+          '<div class="stats-milestone"><div class="stats-milestone-label">Slowest Completion</div><div class="stats-milestone-value">' + s.masteryTimes.slice().sort((a, b) => b.days - a.days)[0].name + '</div><div class="stats-milestone-sub">' + s.masteryTimes.slice().sort((a, b) => b.days - a.days)[0].days + ' day(s) ' + CAMO_TIERS[0].label + '\u2192' + CAMO_TIERS[CAMO_TIERS.length - 1].label + '</div></div>' +
         '</div>'
-      : '<div class="empty-note">No fully-mastered weapons with recorded first-to-last mastery camo timestamps yet.</div>') +
+      : '<div class="empty-note">No completed weapons with recorded Gold-to-Harmonic Break timestamps yet.</div>') +
   '</section>';
 
   el.innerHTML = overviewHtml + chartHtml + habitsHtml + tierHtml + classHtml + milestonesHtml;

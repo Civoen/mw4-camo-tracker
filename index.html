@@ -12,6 +12,11 @@
 <meta name="twitter:description" content="A quick and easy way to track your camo grind.">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="MW4 Camos">
 <meta name="theme-color" content="#131211">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -139,7 +144,7 @@ renderModeSwitcher('modeSwitcher');
 initHomeWeaponSearch('homeWeaponSearch', 'homeSearchResults');
 initProgressCardButton('downloadProgressCard');
 
-(function(){
+function renderHomeProgress(animate){
   const progress = loadCamoProgress();
   // Counts every camo tier earned across every weapon (not just fully
   // mastered weapons) so a single camo pickup moves this bar.
@@ -163,10 +168,12 @@ initProgressCardButton('downloadProgressCard');
   const homeProgressLink = document.querySelector('.progress-block-link');
   const isMaxed = pct === 100;
   homeBigPct.innerHTML = pct + '%<span>Overall Progress &middot; ' + earned + ' of ' + totalPossible + ' camos earned</span>';
-  countUpPercent(homeBigPct, pct);
+  if(animate) countUpPercent(homeBigPct, pct);
   homeBigPct.style.color = isMaxed ? '' : activeColor; // let the .maxed CSS rule take over at 100%
   if(homeProgressLink) homeProgressLink.classList.toggle('maxed', isMaxed);
-})();
+}
+renderHomeProgress(true);
+onDataSync(() => { renderClassSummary('classGrid'); renderHomeProgress(false); });
 </script>
 </body>
 </html>

@@ -121,7 +121,7 @@ async function generateProgressCardCanvas(){
   ctx.drawImage(glyphImg, PAD + mwWidth - 14, titleBaseline - 34, glyphW, glyphH);
   ctx.fillText('Camo Tracker', PAD + mwWidth - 14 + glyphW - 2, titleBaseline);
 
-  const badgeText = getModeInfo(getCurrentMode()).label.toUpperCase();
+  const badgeText = 'ALL MODES'; // weapon camos are shared across every mode
   ctx.font = '700 13px Barlow';
   const badgeTextW = ctx.measureText(badgeText).width;
   const badgePadX = 16, badgeH = 38;

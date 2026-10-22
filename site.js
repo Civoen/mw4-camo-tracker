@@ -33,11 +33,11 @@ function countUpPercent(el, target, duration){
 }
 
 // Plays the mastery sweep once per milestone: the first time a tile shows
-// as 100% in this mode. Dropping below 100% re-arms it.
+// as 100%. Dropping below 100% re-arms it.
 const CELEBRATED_KEY = 'mw4camo-celebrated';
 function celebrateNewMilestones(tileEls){
   let seen = [];
-  try{ seen = JSON.parse(localStorage.getItem(modeStorageKey(CELEBRATED_KEY)) || '[]'); }catch(e){}
+  try{ seen = JSON.parse(localStorage.getItem(CELEBRATED_KEY) || '[]'); }catch(e){}
   const next = [];
   tileEls.forEach(el => {
     const id = el.getAttribute('data-tile');
@@ -45,13 +45,13 @@ function celebrateNewMilestones(tileEls){
     next.push(id);
     if(!seen.includes(id)) el.classList.add('mastery-sweep');
   });
-  try{ localStorage.setItem(modeStorageKey(CELEBRATED_KEY), JSON.stringify(next)); }catch(e){}
+  try{ localStorage.setItem(CELEBRATED_KEY, JSON.stringify(next)); }catch(e){}
 }
 
 // ---- Shared progress helpers ----
 function loadCamoProgress(){
   try{
-    const raw = localStorage.getItem(modeStorageKey('mw4camo-progress'));
+    const raw = localStorage.getItem('mw4camo-progress');
     return raw ? JSON.parse(raw) : {};
   }catch(e){
     return {};
@@ -59,7 +59,7 @@ function loadCamoProgress(){
 }
 
 function saveCamoProgress(progress){
-  try{ localStorage.setItem(modeStorageKey('mw4camo-progress'), JSON.stringify(progress)); }catch(e){}
+  try{ localStorage.setItem('mw4camo-progress', JSON.stringify(progress)); }catch(e){}
 }
 
 // A weapon counts as "mastered" once every tier in CAMO_TIERS is checked.
@@ -97,20 +97,51 @@ function highestCompleteTierColor(weaponsArr, progress){
   return color;
 }
 
-// Whether a given tier is unlocked for a specific weapon right now. MW4's
-// mastery camos unlock in order per weapon: a camo needs the one before it
-// on the same weapon, nothing else. (No class-wide requirement has been
-// confirmed for MW4; if launch shows one, this is the only place to change.)
+// Whether a given tier is unlocked for a specific weapon right now. Tiers
+// unlock in order on each weapon; with CLASS_GATED (data.js) on, Platinum
+// and Harmonic Break also need the tier before on every weapon in the class.
 function tierUnlocked(weapon, tierIndex, progress){
-  if(tierIndex === 0) return true; // first mastery camo has no prerequisite
-  const prevTier = CAMO_TIERS[tierIndex - 1];
-  return !!(progress[weapon.name] || {})[prevTier.key];
+  return !tierLockReason(weapon, tierIndex, progress);
+}
+
+// Why a tier is locked (shown as a tooltip), or '' if it's unlocked.
+function tierLockReason(weapon, tierIndex, progress){
+  if(tierIndex === 0) return '';
+  const prev = CAMO_TIERS[tierIndex - 1];
+  if(!(progress[weapon.name] || {})[prev.key]) return 'Needs ' + prev.label + ' first';
+  if(!CLASS_GATED) return '';
+  const classWeapons = WEAPONS.filter(w => w.class === weapon.class);
+  const done = classWeapons.filter(w => (progress[w.name] || {})[prev.key]).length;
+  if(done < classWeapons.length){
+    return 'Needs ' + prev.label + ' on every ' + classLabel(weapon.class).replace(/s$/, '') + ' (' + done + '/' + classWeapons.length + ')';
+  }
+  return '';
+}
+
+// What's holding a class back: the lowest tier not yet earned on every
+// weapon in it, and which weapons are missing it. With class gating that
+// tier is what stops the next one unlocking anywhere in the class.
+// Returns null when the whole class is complete.
+function classBlocker(cls, progress){
+  const weapons = WEAPONS.filter(w => w.class === cls);
+  for(let i = 0; i < CAMO_TIERS.length; i++){
+    const missing = weapons.filter(w => !(progress[w.name] || {})[CAMO_TIERS[i].key]);
+    if(missing.length){
+      return {
+        tier: CAMO_TIERS[i],
+        unlocks: i < CAMO_TIERS.length - 1 ? CAMO_TIERS[i + 1].label : DIVERGENCE.label,
+        missing: missing
+      };
+    }
+  }
+  return null;
 }
 
 function nextTierLabel(name){
   const progress = loadCamoProgress();
   const p = progress[name] || {};
   const next = CAMO_TIERS.find(t => !p[t.key]);
+  if(next === CAMO_TIERS[0] && !p[PREP_TICK.key]) return 'Next: Military & Special, then ' + next.label;
   return next ? 'Next: ' + next.label : 'All tiers complete';
 }
 
@@ -124,7 +155,7 @@ function advanceNextTier(name){
   const p = progress[name] || {};
   const nextIndex = CAMO_TIERS.findIndex(t => !p[t.key]);
   if(nextIndex === -1) return; // already fully mastered
-  if(!tierUnlocked(weapon, nextIndex, progress)) return; // rest of the class hasn't caught up yet
+  if(!tierUnlocked(weapon, nextIndex, progress)) return; // locked (see tierLockReason)
   if(!progress[name]) progress[name] = {};
   progress[name][CAMO_TIERS[nextIndex].key] = true;
   saveCamoProgress(progress);
@@ -180,7 +211,7 @@ function showUndoToast(message, onCommit, onUndo){
 
 function loadRecentLog(){
   try{
-    const raw = localStorage.getItem(modeStorageKey(RECENT_LOG_KEY));
+    const raw = localStorage.getItem(RECENT_LOG_KEY);
     return raw ? JSON.parse(raw) : [];
   }catch(e){
     return [];
@@ -188,7 +219,7 @@ function loadRecentLog(){
 }
 
 function saveRecentLog(list){
-  try{ localStorage.setItem(modeStorageKey(RECENT_LOG_KEY), JSON.stringify(list)); }catch(e){}
+  try{ localStorage.setItem(RECENT_LOG_KEY, JSON.stringify(list)); }catch(e){}
 }
 
 function logCamoChange(weaponName, tierKey){
@@ -226,7 +257,7 @@ function renderRecentRows(containerId, log){
   el.innerHTML = log.length
     ? log.map((entry, i) =>
         '<div class="recent-row" data-index="'+i+'" data-class="'+entry.class+'" role="button" tabindex="0">' +
-          '<span class="recent-dot" style="background:'+(CAMO_TIERS.find(t => t.key === entry.tierKey) || {}).color+'"></span>' +
+          '<span class="recent-dot" style="background:'+(entry.color || (CAMO_TIERS.find(t => t.key === entry.tierKey) || {}).color)+'"></span>' +
           '<span class="recent-main">' +
             '<span class="recent-weapon">'+entry.name+'</span>' +
             '<span class="recent-class">'+entry.class+'</span>' +
@@ -288,7 +319,7 @@ const GRIND_LIST_KEY = 'mw4camo-grindlist';
 
 function loadGrindList(){
   try{
-    const raw = localStorage.getItem(modeStorageKey(GRIND_LIST_KEY));
+    const raw = localStorage.getItem(GRIND_LIST_KEY);
     return raw ? JSON.parse(raw) : [];
   }catch(e){
     return [];
@@ -296,7 +327,7 @@ function loadGrindList(){
 }
 
 function saveGrindList(list){
-  try{ localStorage.setItem(modeStorageKey(GRIND_LIST_KEY), JSON.stringify(list)); }catch(e){}
+  try{ localStorage.setItem(GRIND_LIST_KEY, JSON.stringify(list)); }catch(e){}
 }
 
 let grindList = loadGrindList();
@@ -340,7 +371,7 @@ function renderGrindList(){
         const unlocked = nextIndex !== -1 && tierUnlocked(w, nextIndex, progress);
         const nextBtnHtml = mastered
           ? ''
-          : '<button class="grind-item-next" data-name="'+name+'" type="button"'+(unlocked ? '' : ' disabled title="Locked until the rest of the class catches up"')+'>Next Camo</button>';
+          : '<button class="grind-item-next" data-name="'+name+'" type="button"'+(unlocked ? '' : ' disabled title="'+tierLockReason(w, nextIndex, progress)+'"')+'>Next Camo</button>';
         return '<div class="grind-item" data-name="'+name+'">' +
           '<span><span class="grind-item-name">'+w.name+'</span><br>' +
           '<span class="grind-item-sub">'+w.class+' &middot; '+nextTierLabel(name)+'</span></span>' +
@@ -505,26 +536,51 @@ function initHomeWeaponSearch(inputId, resultsId){
   });
 }
 
-// Full 3-pill switcher, used on the homepage. Switching mode reloads the
-// page — simplest way to guarantee every piece of mode-aware state
-// (progress, grind list, recent log, accent color, eyebrow badge) re-reads
-// from the newly-selected mode's storage rather than needing each of those
-// systems to support being swapped out live.
+// ---- Live refresh (mode switches + other tabs) ----
+// Pages register a refresh callback with onDataSync(). It runs when the
+// mode changes (no page reload needed: weapon progress is shared, so only
+// mode-specific bits like the Mastery panel actually change) and whenever
+// another tab/window saves tracker data, so a stale tab never shows, or
+// worse saves over, newer progress.
+const _syncHandlers = [];
+function onDataSync(fn){ _syncHandlers.push(fn); }
+function runDataSync(){
+  _syncHandlers.forEach(fn => { try{ fn(); }catch(e){ console.error(e); } });
+}
+
+function changeMode(modeKey){
+  if(modeKey === getCurrentMode()) return;
+  setCurrentMode(modeKey);
+  applyModeAccent();
+  runDataSync();
+}
+
+window.addEventListener('storage', (e) => {
+  if(e.key !== null && e.key.indexOf('mw4camo-') !== 0) return;
+  if(e.key === null || e.key === MODE_KEY_STORAGE) applyModeAccent();
+  if(grindListEl){
+    grindList = loadGrindList();
+    renderGrindList();
+  }
+  runDataSync();
+});
+
+// Full 3-pill switcher, used on the homepage.
 function renderModeSwitcher(containerId){
   const el = document.getElementById(containerId);
   if(!el) return;
-  const current = getCurrentMode();
-  el.innerHTML = MODES.map(m =>
-    '<button class="mode-pill'+(m.key === current ? ' active' : '')+'" data-mode="'+m.key+'" type="button" style="--pill-accent:'+m.accent+'">'+m.label+'</button>'
-  ).join('');
-  el.querySelectorAll('.mode-pill').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const mode = btn.getAttribute('data-mode');
-      if(mode === getCurrentMode()) return;
-      setCurrentMode(mode);
-      window.location.reload();
-    });
+  function draw(){
+    const current = getCurrentMode();
+    el.innerHTML = MODES.map(m =>
+      '<button class="mode-pill'+(m.key === current ? ' active' : '')+'" data-mode="'+m.key+'" type="button" style="--pill-accent:'+m.accent+'">'+m.label+'</button>'
+    ).join('');
+  }
+  el.addEventListener('click', (e) => {
+    const btn = e.target.closest('.mode-pill');
+    if(btn) changeMode(btn.getAttribute('data-mode'));
   });
+  onDataSync(draw);
+  draw();
 }
 
 // Compact dropdown version for the nav bar on every other page, so you can
@@ -532,34 +588,37 @@ function renderModeSwitcher(containerId){
 function renderNavModeSwitcher(wrapId){
   const wrap = document.getElementById(wrapId);
   if(!wrap) return;
-  const current = getCurrentMode();
-  const currentInfo = getModeInfo(current);
-  wrap.innerHTML =
-    '<button class="nav-mode-btn" id="navModeBtn" type="button">'+currentInfo.label+' <span class="nav-mode-caret">&#9662;</span></button>' +
-    '<div class="nav-mode-menu" id="navModeMenu">' +
-      MODES.map(m =>
-        '<button class="nav-mode-option'+(m.key === current ? ' active' : '')+'" data-mode="'+m.key+'" type="button" style="--pill-accent:'+m.accent+'">'+m.label+'</button>'
-      ).join('') +
-    '</div>';
-
-  const btn = document.getElementById('navModeBtn');
-  const menu = document.getElementById('navModeMenu');
-  btn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    menu.classList.toggle('open');
-  });
-  menu.querySelectorAll('.nav-mode-option').forEach(opt => {
-    opt.addEventListener('click', () => {
-      const mode = opt.getAttribute('data-mode');
-      if(mode !== getCurrentMode()){
-        setCurrentMode(mode);
-        window.location.reload();
-      }
-    });
+  function draw(){
+    const current = getCurrentMode();
+    wrap.innerHTML =
+      '<button class="nav-mode-btn" type="button">'+getModeInfo(current).label+' <span class="nav-mode-caret">&#9662;</span></button>' +
+      '<div class="nav-mode-menu">' +
+        MODES.map(m =>
+          '<button class="nav-mode-option'+(m.key === current ? ' active' : '')+'" data-mode="'+m.key+'" type="button" style="--pill-accent:'+m.accent+'">'+m.label+'</button>'
+        ).join('') +
+      '</div>';
+  }
+  wrap.addEventListener('click', (e) => {
+    const menu = wrap.querySelector('.nav-mode-menu');
+    const opt = e.target.closest('.nav-mode-option');
+    if(opt){
+      menu.classList.remove('open');
+      changeMode(opt.getAttribute('data-mode'));
+      return;
+    }
+    if(e.target.closest('.nav-mode-btn')){
+      e.stopPropagation();
+      menu.classList.toggle('open');
+    }
   });
   document.addEventListener('click', (e) => {
-    if(!e.target.closest('.nav-mode-switcher')) menu.classList.remove('open');
+    if(!e.target.closest('.nav-mode-switcher')){
+      const menu = wrap.querySelector('.nav-mode-menu');
+      if(menu) menu.classList.remove('open');
+    }
   });
+  onDataSync(draw);
+  draw();
 }
 
 function renderClassSummary(containerId){
@@ -692,6 +751,8 @@ function initCamoChecklist(config){
       });
     }
 
+    renderBlockers();
+
     // Progress block's own outline: gold once the whole scope has Gold,
     // then platinum, onyx, nova as each tier gets fully completed.
     const progressBlock = document.getElementById('progressBlock');
@@ -702,20 +763,80 @@ function initCamoChecklist(config){
     }
   }
 
+  let blockersExpanded = false;
+  // "What's blocking" list under the progress bars: one line per class in
+  // scope that isn't finished, naming the weapons holding it back. Weapon
+  // names are buttons that search for that weapon.
+  function renderBlockers(){
+    const progressBlock = document.getElementById('progressBlock');
+    if(!progressBlock) return;
+    let box = document.getElementById('progressBlockers');
+    if(!box){
+      box = document.createElement('div');
+      box.id = 'progressBlockers';
+      box.className = 'blockers';
+      progressBlock.appendChild(box);
+      box.addEventListener('click', (e) => {
+        if(e.target.closest('[data-toggle-blockers]')){
+          blockersExpanded = !blockersExpanded;
+          renderBlockers();
+          return;
+        }
+        const btn = e.target.closest('[data-find]');
+        if(!btn) return;
+        searchQuery = btn.getAttribute('data-find');
+        const input = config.searchInputId ? document.getElementById(config.searchInputId) : null;
+        if(input) input.value = searchQuery;
+        render();
+      });
+    }
+    const classes = activeClass === 'All' ? WEAPON_CLASSES : [activeClass];
+    const rows = classes.map(cls => ({ cls: cls, b: classBlocker(cls, progress) })).filter(r => r.b);
+    if(!rows.length){
+      box.innerHTML = '';
+      box.style.display = 'none';
+      return;
+    }
+    box.style.display = '';
+    const MAX_NAMES = 3;
+    const MAX_ROWS = 3;
+    const shown = blockersExpanded ? rows : rows.slice(0, MAX_ROWS);
+    const toggle = rows.length > MAX_ROWS
+      ? '<button class="blockers-toggle" type="button" data-toggle-blockers>' + (blockersExpanded ? 'Show less' : 'Show all ' + rows.length + ' classes') + '</button>'
+      : '';
+    box.innerHTML = '<div class="blockers-title">' + (CLASS_GATED ? 'Holding things up' : 'Still to earn') + '</div>' +
+      shown.map(r => {
+        const names = r.b.missing.slice(0, MAX_NAMES).map(w =>
+          '<button class="blocker-weapon" type="button" data-find="' + w.name + '">' + w.name + '</button>'
+        ).join(', ');
+        const more = r.b.missing.length > MAX_NAMES ? ' +' + (r.b.missing.length - MAX_NAMES) + ' more' : '';
+        return '<div class="blocker-row">' +
+          '<span class="blocker-class">' + classLabel(r.cls) + '</span>' +
+          '<span class="blocker-text">' + r.b.unlocks + ' needs <b style="color:' + r.b.tier.color + '">' + r.b.tier.label + '</b> on ' + names + more + '</span>' +
+        '</div>';
+      }).join('') + toggle;
+  }
+
   function renderRow(w){
     const p = progress[w.name] || {};
     const pinned = grindList.includes(w.name);
     const swatchesHtml = CAMO_TIERS.map((t, i) => {
-      const unlocked = tierUnlocked(w, i, progress);
+      const lockReason = tierLockReason(w, i, progress);
       const done = !!p[t.key];
-      const locked = !unlocked && !done;
+      const locked = !!lockReason && !done;
       const chipStyle = done ? 'background:' + t.color + ';border-color:transparent;' : (locked ? '' : 'border-color:' + t.color + ';');
-      return '<label class="tier-swatch'+(done ? ' tier-done' : '')+(locked ? ' tier-locked' : '')+'">' +
+      return '<label class="tier-swatch'+(done ? ' tier-done' : '')+(locked ? ' tier-locked' : '')+'"'+(locked ? ' title="'+lockReason+'"' : '')+'>' +
         '<input class="sr-only" type="checkbox" data-name="'+w.name+'" data-tier="'+t.key+'"'+(done ? ' checked' : '')+(locked ? ' disabled' : '')+'>' +
         '<span class="swatch-chip'+(locked ? ' locked' : '')+'" style="'+chipStyle+'"></span>' +
         '<span class="swatch-label">'+t.label+'</span>' +
       '</label>';
     }).join('');
+    const prepImplied = !!p[CAMO_TIERS[0].key];
+    const prepDone = prepImplied || !!p[PREP_TICK.key];
+    const prepHtml = '<label class="prep-tick'+(prepDone ? ' done' : '')+'"'+(prepImplied ? ' title="Done: '+CAMO_TIERS[0].label+' is earned"' : '')+'>' +
+      '<input class="sr-only" type="checkbox" data-prep="'+w.name+'"'+(prepDone ? ' checked' : '')+(prepImplied ? ' disabled' : '')+'>' +
+      '<span class="prep-box"></span>' + PREP_TICK.label +
+    '</label>';
     const cardColor = highestOwnTierColor(w.name, progress);
     const cardStyle = cardColor ? ' style="--card-border:' + cardColor + '"' : '';
     return '<div class="weapon-card'+(pinned ? ' pinned' : '')+'" data-name="'+w.name+'" data-class="'+w.class+'"'+cardStyle+'>' +
@@ -723,6 +844,7 @@ function initCamoChecklist(config){
         '<div class="weapon-name">'+w.name+'</div>' +
         '<div class="weapon-class">'+w.class+'</div>' +
         '<div class="swatch-row">'+swatchesHtml+'</div>' +
+        prepHtml +
       '</div>' +
     '</div>';
   }
@@ -735,6 +857,7 @@ function initCamoChecklist(config){
       : '<div class="empty-note">' + (hasClassMatches ? 'No weapons match your search.' : 'No weapons in this class yet.') + '</div>';
     bindRowEvents();
     updateProgressBar();
+    if(config.masteryElId) renderMasteryPanel(config.masteryElId, progress);
     updateFilterEmpty();
     renderClassFilterButtons();
   }
@@ -783,8 +906,18 @@ function initCamoChecklist(config){
         }
       });
     });
-    listEl.querySelectorAll('.tier-swatch').forEach(label => {
+    listEl.querySelectorAll('.tier-swatch, .prep-tick').forEach(label => {
       label.addEventListener('click', (e) => e.stopPropagation());
+    });
+    listEl.querySelectorAll('input[data-prep]').forEach(box => {
+      box.addEventListener('change', () => {
+        const name = box.getAttribute('data-prep');
+        if(!progress[name]) progress[name] = {};
+        progress[name][PREP_TICK.key] = box.checked;
+        saveCamoProgress(progress);
+        renderGrindList();
+        render();
+      });
     });
 
     // Clicking anywhere else on a weapon's card pins/unpins it.
@@ -843,6 +976,131 @@ function initCamoChecklist(config){
     progress = loadCamoProgress();
     render();
   });
+  onDataSync(() => {
+    progress = loadCamoProgress();
+    render();
+  });
 
   render();
+}
+
+// ---- Divergence + Mastery panel (camos.html) ----
+// Divergence is worked out from weapon progress (Harmonic Break on every
+// weapon), so it can't be ticked by hand. The current mode's three Mastery
+// camos are ticked here, in order, once Divergence is in. Mastery progress
+// is stored per mode: { mp: {...}, dmz: {...}, wz: {...} }.
+const MASTERY_KEY = 'mw4camo-mastery';
+
+function loadMastery(){
+  try{
+    const raw = localStorage.getItem(MASTERY_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){
+    return {};
+  }
+}
+
+function saveMastery(m){
+  try{ localStorage.setItem(MASTERY_KEY, JSON.stringify(m)); }catch(e){}
+}
+
+function divergenceCount(progress){
+  const last = CAMO_TIERS[CAMO_TIERS.length - 1].key;
+  return WEAPONS.filter(w => (progress[w.name] || {})[last]).length;
+}
+
+function renderMasteryPanel(containerId, progress){
+  const el = document.getElementById(containerId);
+  if(!el) return;
+  const modeKey = getCurrentMode();
+  const mode = getModeInfo(modeKey);
+  const camos = MASTERY_CAMOS[modeKey] || [];
+  const all = loadMastery();
+  const done = all[modeKey] || {};
+  const hbCount = divergenceCount(progress);
+  const hasDivergence = hbCount === WEAPONS.length;
+  const lastTier = CAMO_TIERS[CAMO_TIERS.length - 1];
+
+  function item(opts){
+    const chipStyle = opts.done ? 'background:' + opts.color + ';border-color:transparent;' : (opts.locked ? '' : 'border-color:' + opts.color + ';');
+    return '<label class="mastery-item tier-swatch' + (opts.done ? ' tier-done' : '') + (opts.locked ? ' tier-locked' : '') + '"' + (opts.title ? ' title="' + opts.title + '"' : '') + '>' +
+      (opts.key ? '<input class="sr-only" type="checkbox" data-mastery="' + opts.key + '"' + (opts.done ? ' checked' : '') + (opts.locked ? ' disabled' : '') + '>' : '') +
+      '<span class="swatch-chip' + (opts.locked ? ' locked' : '') + '" style="' + chipStyle + '"></span>' +
+      '<span class="swatch-label">' + opts.label + '</span>' +
+      '<span class="mastery-req">' + opts.req + '</span>' +
+    '</label>';
+  }
+
+  let html = item({
+    label: DIVERGENCE.label,
+    color: DIVERGENCE.color,
+    done: hasDivergence,
+    locked: false,
+    req: lastTier.label + ' on all ' + WEAPONS.length + ' weapons &middot; ' + hbCount + '/' + WEAPONS.length,
+    title: 'Ticks itself once every weapon has ' + lastTier.label
+  });
+  camos.forEach((c, i) => {
+    const isDone = !!done[c.key];
+    let lockReason = '';
+    if(mode.comingSoon) lockReason = 'Not available yet';
+    else if(!hasDivergence) lockReason = 'Needs Divergence first';
+    else if(i > 0 && !done[camos[i - 1].key]) lockReason = 'Needs ' + camos[i - 1].label + ' first';
+    html += item({
+      key: c.key,
+      label: c.label,
+      color: c.color,
+      done: isDone,
+      locked: !!lockReason && !isDone,
+      title: lockReason,
+      req: c.req || 'Requirement not published yet'
+    });
+  });
+
+  el.innerHTML =
+    '<div class="mastery-head">' +
+      '<span class="mastery-title">' + mode.label + ' Mastery</span>' +
+      '<span class="mastery-note">Weapon camos are shared across Multiplayer, DMZ and Warzone. Mastery camos are per mode.</span>' +
+    '</div>' +
+    (mode.comingSoon ? '<div class="mastery-soon">' + mode.comingSoon + '</div>' : '') +
+    '<div class="mastery-row">' + html + '</div>';
+
+  el.querySelectorAll('input[data-mastery]').forEach(box => {
+    box.addEventListener('change', () => {
+      const key = box.getAttribute('data-mastery');
+      const checked = box.checked;
+      const m = loadMastery();
+      const before = Object.assign({}, m[modeKey] || {});
+      if(!m[modeKey]) m[modeKey] = {};
+      m[modeKey][key] = checked;
+      const idx = camos.findIndex(c => c.key === key);
+      if(!checked) camos.slice(idx + 1).forEach(c => { m[modeKey][c.key] = false; });
+      saveMastery(m);
+      if(checked){
+        const c = camos[idx];
+        const log = loadRecentLog();
+        log.unshift({ name: c.label, class: mode.label + ' Mastery', tierKey: c.key, tierLabel: 'Mastery', color: c.color, ts: Date.now() });
+        saveRecentLog(log.slice(0, RECENT_LOG_LIMIT));
+      }
+      renderMasteryPanel(containerId, progress);
+      if(checked && !REDUCED_MOTION){
+        const chip = el.querySelector('input[data-mastery="' + key + '"] + .swatch-chip');
+        if(chip) chip.classList.add('chip-pop');
+      }
+      if(!checked){
+        const lost = camos.filter(c => before[c.key]).map(c => c.label);
+        if(lost.length){
+          showUndoToast(
+            lost.length === 1 ? 'Removed ' + lost[0] : 'Removed ' + lost.length + ' mastery camos',
+            () => {},
+            () => {
+              const m2 = loadMastery();
+              m2[modeKey] = before;
+              saveMastery(m2);
+              renderMasteryPanel(containerId, loadCamoProgress());
+            }
+          );
+        }
+      }
+    });
+  });
 }

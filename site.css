@@ -1115,3 +1115,144 @@ body.grindlist-fullscreen > .hero{
     transition:none !important;
   }
 }
+
+/* ---- Divergence + Mastery panel (camos.html) ---- */
+.mastery-panel{
+  background:var(--panel);
+  border:1px solid var(--line);
+  padding:18px 22px 20px;
+  margin:-14px 0 30px;
+}
+.mastery-head{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:6px 18px;
+  flex-wrap:wrap;
+  margin-bottom:14px;
+}
+.mastery-title{
+  font-family:'Stack Sans Headline', 'DejaVu Sans Condensed', sans-serif;
+  font-weight:700;
+  text-transform:uppercase;
+  font-size:16px;
+  color:var(--gold);
+}
+.mastery-note{font-size:11px;color:var(--dim);}
+.mastery-soon{
+  font-size:12px;
+  color:var(--paper);
+  border-left:3px solid var(--gold);
+  padding:6px 10px;
+  margin-bottom:14px;
+  background:var(--panel-2);
+}
+.mastery-row{display:grid;grid-template-columns:repeat(4, 1fr);gap:12px;}
+.mastery-item{cursor:pointer;}
+.mastery-item.tier-locked{cursor:not-allowed;}
+.mastery-item .swatch-chip{height:34px;}
+.mastery-item .swatch-label{font-size:10px;}
+.mastery-req{
+  display:block;
+  font-size:10.5px;
+  line-height:1.35;
+  color:var(--dim);
+  margin-top:4px;
+}
+@media (max-width: 640px){
+  .mastery-row{grid-template-columns:repeat(2, 1fr);}
+}
+
+/* ---- What's holding things up (camos.html progress block) ---- */
+.blockers{
+  flex-basis:100%;
+  border-top:1px solid var(--line);
+  padding-top:14px;
+  display:grid;
+  gap:6px;
+}
+.blockers-title{
+  font-size:10.5px;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--dim);
+  margin-bottom:2px;
+}
+.blocker-row{display:flex;gap:12px;font-size:12.5px;line-height:1.45;color:var(--dim);}
+.blocker-class{
+  flex:0 0 130px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  font-size:11px;
+  color:var(--paper);
+  padding-top:1px;
+}
+.blocker-text b{font-weight:700;}
+.blocker-weapon{
+  background:none;
+  border:none;
+  padding:0;
+  font:inherit;
+  color:var(--paper);
+  text-decoration:underline;
+  text-decoration-color:var(--line);
+  text-underline-offset:3px;
+  cursor:pointer;
+}
+.blocker-weapon:hover{color:var(--gold);text-decoration-color:var(--gold);}
+@media (max-width: 560px){
+  .blocker-row{flex-direction:column;gap:0;}
+  .blocker-class{flex-basis:auto;}
+}
+
+/* ---- Optional Military & Special tick on weapon cards ---- */
+.prep-tick{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  margin-top:12px;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  color:var(--dim);
+  cursor:pointer;
+  width:max-content;
+}
+.prep-box{
+  width:14px;height:14px;
+  border:1px solid var(--line);
+  background:var(--panel-2);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+.prep-tick:hover .prep-box{border-color:var(--gold);}
+.prep-tick.done{color:var(--paper);}
+.prep-tick.done .prep-box{background:var(--gold);border-color:var(--gold);}
+.prep-tick.done .prep-box::after{
+  content:"";
+  width:7px;height:4px;
+  border-left:2px solid var(--bg);
+  border-bottom:2px solid var(--bg);
+  transform:translateY(-1px) rotate(-45deg);
+}
+.prep-tick input:disabled ~ .prep-box{opacity:.7;}
+.prep-tick:has(input:disabled){cursor:default;}
+.prep-tick:focus-within .prep-box{outline:2px solid var(--hazard);outline-offset:1px;}
+.blockers-toggle{
+  justify-self:start;
+  background:none;
+  border:none;
+  padding:4px 0 0;
+  font-family:'Barlow', sans-serif;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  color:var(--gold);
+  cursor:pointer;
+}
+.blockers-toggle:hover{text-decoration:underline;text-underline-offset:3px;}

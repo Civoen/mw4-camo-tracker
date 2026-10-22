@@ -6,12 +6,17 @@
 <title>Manage Data | MW4 Camo Tracker</title>
 <meta property="og:type" content="website">
 <meta property="og:title" content="Manage Data | MW4 Camo Tracker">
-<meta property="og:description" content="Back up or restore your MW4 Camo Tracker progress on this browser.">
+<meta property="og:description" content="Move your MW4 Camo Tracker progress between devices with a short sync code, or back it up to a file.">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Manage Data | MW4 Camo Tracker">
-<meta name="twitter:description" content="Back up or restore your MW4 Camo Tracker progress on this browser.">
+<meta name="twitter:description" content="Move your MW4 Camo Tracker progress between devices with a short sync code, or back it up to a file.">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="MW4 Camos">
 <meta name="theme-color" content="#131211">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -81,35 +86,6 @@
   }
   .reset-btn:hover{background:var(--danger);color:#fff;}
   .reset-btn.confirming{background:var(--danger);color:#fff;}
-  .test-section{
-    margin-top:28px;
-    padding:14px;
-    border:1px dashed var(--danger);
-    background:var(--panel-2);
-  }
-  .test-label{
-    font-size:10px;
-    font-weight:700;
-    text-transform:uppercase;
-    letter-spacing:.08em;
-    color:var(--danger);
-    margin-bottom:10px;
-  }
-  .test-btn{
-    display:block;
-    width:100%;
-    background:none;
-    border:1px solid var(--danger);
-    color:var(--danger);
-    font-family:'Barlow', sans-serif;
-    font-weight:700;
-    text-transform:uppercase;
-    letter-spacing:.03em;
-    font-size:12px;
-    padding:11px 16px;
-    cursor:pointer;
-  }
-  .test-btn:hover{background:var(--danger);color:#fff;}
   .status{
     font-size:12px;
     padding:10px 14px;
@@ -130,16 +106,6 @@
     text-decoration:none;
   }
   .home-link:hover{color:var(--hazard);}
-  .mode-indicator{
-    display:inline-block;
-    font-size:11px;
-    font-weight:700;
-    text-transform:uppercase;
-    letter-spacing:.06em;
-    color:var(--dim);
-    margin-bottom:18px;
-  }
-  .mode-indicator span{color:var(--mode-accent, var(--gold));}
   .reset-disclaimer{
     font-size:11.5px;
     color:var(--dim);
@@ -147,13 +113,103 @@
     margin-top:10px;
     text-align:left;
   }
+  .section-label{
+    font-size:10.5px;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--dim);
+    text-align:left;
+    margin:0 0 8px;
+  }
+  .sync-box{
+    background:var(--panel);
+    border:1px solid var(--line);
+    padding:18px;
+    margin-bottom:30px;
+    text-align:left;
+  }
+  .sync-row{display:flex;gap:8px;margin-bottom:10px;}
+  .sync-code,
+  .sync-input{
+    flex:1;
+    min-width:0;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--paper);
+    font-family:'Barlow', sans-serif;
+    font-weight:600;
+    font-size:15px;
+    letter-spacing:.06em;
+    padding:11px 12px;
+  }
+  .sync-code{
+    color:var(--gold);
+    font-family:'Stack Sans Headline', 'DejaVu Sans Condensed', sans-serif;
+    font-weight:700;
+    font-size:22px;
+    letter-spacing:.06em;
+    padding:8px 12px;
+    display:flex;
+    align-items:center;
+    min-height:46px;
+  }
+  .sync-code.empty{color:var(--dim);font-family:'Barlow', sans-serif;font-size:13px;font-weight:500;letter-spacing:0;}
+  .sync-input{text-transform:uppercase;}
+  .sync-input::placeholder{text-transform:none;}
+  .sync-btn:disabled{opacity:.5;cursor:default;background:var(--panel-2);color:var(--gold);}
+  .sync-btn.sync-btn-wide{display:block;width:100%;padding:12px 16px;margin-top:12px;}
+  .sync-btn[hidden]{display:none;}
+  .sync-input:focus{border-color:var(--gold);outline:none;}
+  .sync-input::placeholder{color:var(--dim);letter-spacing:0;font-family:'Barlow', sans-serif;}
+  .sync-btn{
+    flex:0 0 auto;
+    background:var(--panel-2);
+    border:1px solid var(--gold);
+    color:var(--gold);
+    font-family:'Barlow', sans-serif;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.03em;
+    font-size:12px;
+    padding:0 16px;
+    cursor:pointer;
+    min-width:84px;
+  }
+  .sync-btn:hover,
+  .sync-btn.confirming{background:var(--gold);color:var(--bg);}
+  .sync-note{font-size:11.5px;color:var(--dim);line-height:1.5;margin:4px 0 0;}
+  .sync-divider{height:1px;background:var(--line);margin:16px 0;}
+  @media (max-width: 480px){
+    .sync-row{flex-wrap:wrap;}
+    .sync-code, .sync-input{flex-basis:100%;justify-content:center;text-align:center;}
+    .sync-btn{flex:1 1 100%;padding:11px 16px;}
+  }
 </style>
 </head>
 <body>
 <div class="hero">
   <h1>Manage Data</h1>
-  <div class="sub">Back up or restore your progress on this browser</div>
-  <div class="mode-indicator" id="modeIndicator">Currently editing: <span id="modeIndicatorLabel">Multiplayer</span></div>
+  <div class="sub">Move your progress between devices, or back it up</div>
+
+  <div class="section-label">Sync Code</div>
+  <div class="sync-box">
+    <div class="sync-row">
+      <div class="sync-code empty" id="syncCodeOut" aria-live="polite">No code yet</div>
+      <button class="sync-btn" id="syncCopyBtn" type="button" hidden>Copy</button>
+    </div>
+    <p class="sync-note" id="syncCodeNote">Create a code, then enter it on your other device to copy your progress over.</p>
+    <button class="sync-btn sync-btn-wide" id="syncCreateBtn" type="button">Create Code</button>
+    <div class="sync-divider"></div>
+    <div class="sync-row">
+      <input class="sync-input" id="syncCodeIn" type="text" placeholder="Enter a code, e.g. STEAK-0218" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Sync code to load">
+      <button class="sync-btn" id="syncLoadBtn" type="button">Load</button>
+    </div>
+    <div class="status" id="syncStatus" style="margin:6px 0 4px;"></div>
+    <p class="sync-note">A code is a snapshot of this device&rsquo;s tracker at the moment it&rsquo;s made, and lasts 30 days. Loading one only changes the device you load it on. Everyone&rsquo;s own progress stays their own.</p>
+  </div>
+
+  <div class="section-label">Backup File</div>
 
   <div class="drop-box" id="dropBox">
     <span class="icon">&#9660;</span>
@@ -167,18 +223,13 @@
   <button class="export-btn" id="exportBtn" type="button">Export</button>
 
   <button class="reset-btn" id="resetBtn" type="button">Reset Progress</button>
-  <div class="reset-disclaimer">Resets Multiplayer, Warzone, <em>and</em> DMZ progress together &mdash; not just the tracker you're currently viewing.</div>
+  <div class="reset-disclaimer">Resets all weapon camos plus Multiplayer, Warzone <em>and</em> DMZ Mastery progress &mdash; not just the mode you're currently viewing.</div>
 
-  <div class="test-section">
-    <div class="test-label">Testing Only &middot; Will Be Removed</div>
-    <button class="test-btn" id="testMaxBtn" type="button">Set All Weapons to 100% &mdash; Current Mode Only</button>
-  </div>
 
   <a class="home-link" href="index.html">&larr; Back to Homepage</a>
 </div>
 
 <script>
-document.getElementById('modeIndicatorLabel').textContent = getModeInfo(getCurrentMode()).label;
 document.documentElement.style.setProperty('--mode-accent', getModeInfo(getCurrentMode()).accent);
 
 const MW4CAMO_PREFIX = 'mw4camo-';
@@ -188,7 +239,7 @@ function collectBundle(){
   try{
     for(let i = 0; i < localStorage.length; i++){
       const key = localStorage.key(i);
-      if(key && key.indexOf(MW4CAMO_PREFIX) === 0){
+      if(key && key.indexOf(MW4CAMO_PREFIX) === 0 && key !== 'mw4camo-sync-last'){
         bundle[key] = localStorage.getItem(key);
       }
     }
@@ -217,8 +268,8 @@ document.getElementById('exportBtn').addEventListener('click', () => {
   showStatus('Progress file downloaded.', 'success');
 });
 
-// Re-applies the "each weapon's mastery camos unlock in order" rule to
-// imported data, using that mode's own camo list. A hand-edited file could
+// Re-applies the "each weapon's camos unlock in order" rule to imported
+// data (Gold -> Platinum -> Harmonic Break). A hand-edited file could
 // otherwise restore an impossible state, like a weapon holding its second
 // mastery camo without the first.
 function sanitizeCamoProgress(progress, tiers){
@@ -238,7 +289,7 @@ function sanitizeCamoProgress(progress, tiers){
 // Keys holding camo progress, which only make sense for the data version
 // they were saved under (see DATA_VERSION in data.js).
 function isProgressDataKey(k){
-  return /^mw4camo-(progress|grindlist|recent)(-|$)/.test(k);
+  return /^mw4camo-(progress|grindlist|recent|mastery|celebrated)(-|$)/.test(k);
 }
 
 function handleImportFile(file){
@@ -271,19 +322,17 @@ function handleImportFile(file){
       skippedOldProgress = keys.length !== before;
     }
     let fixedCount = 0;
-    MODES.forEach(m => {
-      const progressKey = MW4CAMO_PREFIX + 'progress-' + m.key;
-      if(data[progressKey] && keys.includes(progressKey)){
-        try{
-          const parsed = JSON.parse(data[progressKey]);
-          const result = sanitizeCamoProgress(parsed, MODE_TIERS[m.key]);
-          fixedCount += result.fixedCount;
-          data[progressKey] = JSON.stringify(result.progress);
-        }catch(err){
-          // If it doesn't parse as expected, just import it as-is rather than blocking the whole restore.
-        }
+    const progressKey = MW4CAMO_PREFIX + 'progress';
+    if(data[progressKey] && keys.includes(progressKey)){
+      try{
+        const parsed = JSON.parse(data[progressKey]);
+        const result = sanitizeCamoProgress(parsed, CAMO_TIERS);
+        fixedCount += result.fixedCount;
+        data[progressKey] = JSON.stringify(result.progress);
+      }catch(err){
+        // If it doesn't parse as expected, just import it as-is rather than blocking the whole restore.
       }
-    });
+    }
     try{
       keys.forEach(k => localStorage.setItem(k, data[k]));
     }catch(err){
@@ -291,8 +340,9 @@ function handleImportFile(file){
       return;
     }
     document.getElementById('fileName').textContent = file.name;
+    if(typeof refreshSyncCode === 'function') refreshSyncCode();
     const fixedNote = fixedCount ? (' ' + fixedCount + ' invalid camo' + (fixedCount === 1 ? '' : 's') + ' (earned without the camo before it) were automatically corrected.') : '';
-    const oldNote = skippedOldProgress ? ' Camo progress in this backup is from the pre-launch placeholder data, so it wasn\u2019t restored.' : '';
+    const oldNote = skippedOldProgress ? ' Camo progress in this backup uses an older camo layout, so it wasn\u2019t restored.' : '';
     showStatus('Imported \u2014 ' + keys.length + ' item(s) restored.' + oldNote + fixedNote, keys.length ? 'success' : 'error');
   };
   reader.readAsText(file);
@@ -317,12 +367,7 @@ const resetBtn = document.getElementById('resetBtn');
 // Reset wipes all three modes' progress/grindlist/recent together — see
 // the disclaimer text next to the button. Built from MODES so adding a
 // fourth mode later doesn't require remembering to update this list.
-const RESET_KEYS = [];
-MODES.forEach(m => {
-  RESET_KEYS.push('mw4camo-progress-' + m.key);
-  RESET_KEYS.push('mw4camo-grindlist-' + m.key);
-  RESET_KEYS.push('mw4camo-recent-' + m.key);
-});
+const RESET_KEYS = ['mw4camo-progress', 'mw4camo-grindlist', 'mw4camo-recent', 'mw4camo-mastery', 'mw4camo-celebrated'];
 let resetPending = false;
 let resetTimeout = null;
 
@@ -347,33 +392,205 @@ resetBtn.addEventListener('click', () => {
   resetPending = false;
   resetBtn.classList.remove('confirming');
   resetBtn.textContent = 'Reset Progress';
-  showStatus('Progress reset. Camo tiers, the Grind List, and recent activity have been cleared.', 'success');
+  if(typeof refreshSyncCode === 'function') refreshSyncCode();
+  showStatus('Progress reset. Weapon camos, Mastery camos, the Grind List, and recent activity have been cleared.', 'success');
 });
 
-// ---- TEMPORARY: testing-only button to instantly max every weapon ----
-// Sets every weapon to every mastery camo for the CURRENT mode only,
-// pushing that mode's percentages to 100%. Not meant to ship — remove this
-// button, its CSS (.test-section/.test-label/.test-btn), and this handler
-// when done testing.
-const testMaxBtn = document.getElementById('testMaxBtn');
-if(testMaxBtn){
-  testMaxBtn.addEventListener('click', () => {
-    const modeLabel = getModeInfo(getCurrentMode()).label;
-    if(!confirm('Set every weapon to 100% for ' + modeLabel + ' only? This overwrites current progress for that mode.')) return;
-    const progress = {};
-    WEAPONS.forEach(w => {
-      const tiers = {};
-      CAMO_TIERS.forEach(t => { tiers[t.key] = true; });
-      progress[w.name] = tiers;
-    });
-    try{
-      localStorage.setItem(modeStorageKey('mw4camo-progress'), JSON.stringify(progress));
-      showStatus('All ' + WEAPONS.length + ' weapons set to 100% for ' + modeLabel + '. Visit any page to see it reflected.', 'success');
-    }catch(e){
-      showStatus('Could not save — this browser\'s local storage may be full.', 'error');
-    }
-  });
+// ---- Sync code ----
+// Snapshots are stored by functions/api/sync.js under a short code like
+// STEAK-0218. The last code made on this device is remembered (with a
+// fingerprint of the data it holds) so the page can say whether it still
+// matches current progress, instead of minting a new code every visit.
+const SYNC_ENDPOINT = '/api/sync';
+const SYNC_KEYS = ['mw4camo-progress', 'mw4camo-mastery', 'mw4camo-grindlist', 'mw4camo-recent', 'mw4camo-celebrated', 'mw4camo-data-version'];
+const SYNC_LAST_KEY = 'mw4camo-sync-last'; // never included in snapshots
+
+const syncOut = document.getElementById('syncCodeOut');
+const syncNote = document.getElementById('syncCodeNote');
+const syncIn = document.getElementById('syncCodeIn');
+const syncCopyBtn = document.getElementById('syncCopyBtn');
+const syncCreateBtn = document.getElementById('syncCreateBtn');
+const syncLoadBtn = document.getElementById('syncLoadBtn');
+
+function showSyncStatus(message, type){
+  const el = document.getElementById('syncStatus');
+  el.textContent = message;
+  el.className = 'status show ' + type;
 }
+function clearSyncStatus(){
+  document.getElementById('syncStatus').className = 'status';
+}
+
+function snapshotData(){
+  const data = {};
+  try{
+    SYNC_KEYS.forEach(k => {
+      const v = localStorage.getItem(k);
+      if(v !== null) data[k] = v;
+    });
+  }catch(e){}
+  return data;
+}
+// Fingerprint of what a code would carry (ignores the "celebrated" marker,
+// which changes on its own as pages are viewed).
+function snapshotFingerprint(data){
+  const d = Object.assign({}, data);
+  delete d['mw4camo-celebrated'];
+  return JSON.stringify(Object.keys(d).sort().map(k => [k, d[k]]));
+}
+function loadLastSync(){
+  try{ return JSON.parse(localStorage.getItem(SYNC_LAST_KEY) || 'null'); }catch(e){ return null; }
+}
+function formatDay(ts){
+  return new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+}
+
+function refreshSyncCode(){
+  const last = loadLastSync();
+  const valid = last && last.code && Date.now() < last.expiresAt;
+  if(!valid){
+    syncOut.textContent = 'No code yet';
+    syncOut.classList.add('empty');
+    syncCopyBtn.hidden = true;
+    syncNote.textContent = 'Create a code, then enter it on your other device to copy your progress over.';
+    syncCreateBtn.textContent = 'Create Code';
+    return;
+  }
+  syncOut.textContent = last.code;
+  syncOut.classList.remove('empty');
+  syncCopyBtn.hidden = false;
+  const upToDate = last.fingerprint === snapshotFingerprint(snapshotData());
+  syncNote.textContent = upToDate
+    ? 'Matches your current progress. Valid until ' + formatDay(last.expiresAt) + '.'
+    : 'Your progress has changed since this code was made. Create a new one to include the latest.';
+  syncCreateBtn.textContent = 'Create New Code';
+}
+refreshSyncCode();
+window.addEventListener('storage', (e) => {
+  if(e.key === null || SYNC_KEYS.includes(e.key) || e.key === SYNC_LAST_KEY) refreshSyncCode();
+});
+
+syncCreateBtn.addEventListener('click', () => {
+  const data = snapshotData();
+  if(!data['mw4camo-progress'] && !data['mw4camo-mastery']){
+    showSyncStatus('Nothing to share yet. Tick off some camos first.', 'error');
+    return;
+  }
+  syncCreateBtn.disabled = true;
+  syncCreateBtn.textContent = 'Creating…';
+  fetch(SYNC_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: data }) })
+    .then(r => r.json().then(body => ({ ok: r.ok, body: body })))
+    .then(res => {
+      if(!res.ok || !res.body.code) throw new Error(res.body.error || 'Could not create a code.');
+      try{
+        localStorage.setItem(SYNC_LAST_KEY, JSON.stringify({ code: res.body.code, expiresAt: res.body.expiresAt, fingerprint: snapshotFingerprint(data) }));
+      }catch(e){}
+      clearSyncStatus();
+      refreshSyncCode();
+    })
+    .catch(err => {
+      showSyncStatus(err.message && err.message !== 'Failed to fetch' ? err.message : 'Couldn’t reach the server. Check your connection and try again.', 'error');
+      refreshSyncCode();
+    })
+    .finally(() => { syncCreateBtn.disabled = false; });
+});
+
+syncCopyBtn.addEventListener('click', () => {
+  const text = syncOut.textContent;
+  function done(){
+    syncCopyBtn.textContent = 'Copied';
+    setTimeout(() => { syncCopyBtn.textContent = 'Copy'; }, 1500);
+  }
+  if(navigator.clipboard && window.isSecureContext){
+    navigator.clipboard.writeText(text).then(done, () => {});
+  }else{
+    const range = document.createRange();
+    range.selectNodeContents(syncOut);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    try{ document.execCommand('copy'); done(); }catch(e){}
+  }
+});
+
+// A code in the URL (import.html?code=STEAK-0218) is dropped into the box,
+// ready to load, but never applied without the confirm click.
+const urlCode = new URLSearchParams(window.location.search).get('code');
+if(urlCode) syncIn.value = urlCode;
+
+let syncPending = null; // the fetched snapshot awaiting confirmation
+let syncTimeout = null;
+function resetSyncLoadBtn(){
+  syncPending = null;
+  clearTimeout(syncTimeout);
+  syncLoadBtn.textContent = 'Load';
+  syncLoadBtn.classList.remove('confirming');
+  syncLoadBtn.disabled = false;
+}
+syncIn.addEventListener('input', resetSyncLoadBtn);
+syncIn.addEventListener('keydown', (e) => { if(e.key === 'Enter') syncLoadBtn.click(); });
+
+function applySnapshot(snap){
+  const data = snap.data || {};
+  if(data['mw4camo-progress']){
+    try{
+      const fixed = sanitizeCamoProgress(JSON.parse(data['mw4camo-progress']), CAMO_TIERS);
+      data['mw4camo-progress'] = JSON.stringify(fixed.progress);
+    }catch(e){}
+  }
+  SYNC_KEYS.forEach(k => {
+    if(k === 'mw4camo-data-version') return;
+    if(typeof data[k] === 'string') localStorage.setItem(k, data[k]);
+    else localStorage.removeItem(k);
+  });
+  localStorage.setItem('mw4camo-data-version', DATA_VERSION);
+}
+
+syncLoadBtn.addEventListener('click', () => {
+  if(syncPending){
+    const snap = syncPending;
+    resetSyncLoadBtn();
+    try{
+      applySnapshot(snap);
+    }catch(err){
+      showSyncStatus('Could not save to this browser’s storage.', 'error');
+      return;
+    }
+    syncIn.value = '';
+    refreshSyncCode();
+    showSyncStatus('Loaded ' + snap.code + '. Open the Camo Tracker to see it.', 'success');
+    return;
+  }
+
+  const raw = syncIn.value.trim();
+  if(!raw){ showSyncStatus('Enter a code first, e.g. STEAK-0218.', 'error'); return; }
+  syncLoadBtn.disabled = true;
+  syncLoadBtn.textContent = '…';
+  fetch(SYNC_ENDPOINT + '?code=' + encodeURIComponent(raw))
+    .then(r => r.json().then(body => ({ ok: r.ok, body: body })))
+    .then(res => {
+      if(!res.ok) throw new Error(res.body.error || 'Could not load that code.');
+      const snap = res.body;
+      if((snap.data || {})['mw4camo-data-version'] !== DATA_VERSION){
+        throw new Error(snap.code + ' was made with an older camo layout, so it can’t be loaded. Create a new code on the other device.');
+      }
+      let camoCount = 0;
+      try{
+        const p = JSON.parse(snap.data['mw4camo-progress'] || '{}');
+        Object.keys(p).forEach(k => { camoCount += CAMO_TIERS.filter(t => p[k][t.key]).length; });
+      }catch(e){}
+      syncLoadBtn.disabled = false;
+      syncPending = snap;
+      syncLoadBtn.textContent = 'Confirm';
+      syncLoadBtn.classList.add('confirming');
+      showSyncStatus('Found ' + snap.code + ' from ' + formatDay(snap.createdAt) + ': ' + camoCount + ' weapon camo' + (camoCount === 1 ? '' : 's') + '. Click Confirm to replace this device’s progress with it.', 'success');
+      syncTimeout = setTimeout(resetSyncLoadBtn, 10000);
+    })
+    .catch(err => {
+      resetSyncLoadBtn();
+      showSyncStatus(err.message && err.message !== 'Failed to fetch' ? err.message : 'Couldn’t reach the server. Check your connection and try again.', 'error');
+    });
+});
 </script>
 </body>
 </html>
