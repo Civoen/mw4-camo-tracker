@@ -97,9 +97,9 @@ function highestCompleteTierColor(weaponsArr, progress){
   return color;
 }
 
-// Whether a given tier is unlocked for a specific weapon right now. Tiers
-// unlock in order on each weapon; with CLASS_GATED (data.js) on, Platinum
-// and Harmonic Break also need the tier before on every weapon in the class.
+// Whether a given tier is unlocked for a specific weapon right now: it
+// needs the tier before it on this weapon, plus whatever the tier's `gate`
+// asks for on other weapons (see CAMO_TIERS in data.js).
 function tierUnlocked(weapon, tierIndex, progress){
   return !tierLockReason(weapon, tierIndex, progress);
 }
@@ -107,13 +107,15 @@ function tierUnlocked(weapon, tierIndex, progress){
 // Why a tier is locked (shown as a tooltip), or '' if it's unlocked.
 function tierLockReason(weapon, tierIndex, progress){
   if(tierIndex === 0) return '';
+  const tier = CAMO_TIERS[tierIndex];
   const prev = CAMO_TIERS[tierIndex - 1];
   if(!(progress[weapon.name] || {})[prev.key]) return 'Needs ' + prev.label + ' first';
-  if(!CLASS_GATED) return '';
-  const classWeapons = WEAPONS.filter(w => w.class === weapon.class);
-  const done = classWeapons.filter(w => (progress[w.name] || {})[prev.key]).length;
-  if(done < classWeapons.length){
-    return 'Needs ' + prev.label + ' on every ' + classLabel(weapon.class).replace(/s$/, '') + ' (' + done + '/' + classWeapons.length + ')';
+  if(!tier.gate) return '';
+  const pool = tier.gate === 'all' ? WEAPONS : WEAPONS.filter(w => w.class === weapon.class);
+  const done = pool.filter(w => (progress[w.name] || {})[prev.key]).length;
+  if(done < pool.length){
+    const scope = tier.gate === 'all' ? 'all weapons' : 'every ' + classLabel(weapon.class).replace(/s$/, '');
+    return 'Needs ' + prev.label + ' on ' + scope + ' (' + done + '/' + pool.length + ')';
   }
   return '';
 }
@@ -126,6 +128,15 @@ function classBlocker(cls, progress){
   const weapons = WEAPONS.filter(w => w.class === cls);
   for(let i = 0; i < CAMO_TIERS.length; i++){
     const missing = weapons.filter(w => !(progress[w.name] || {})[CAMO_TIERS[i].key]);
+    // A tier gated on ALL weapons can be held up by other classes: report
+    // that (once, as a game-wide row) rather than this class's own gaps.
+    if(missing.length && i > 0 && CAMO_TIERS[i].gate === 'all'){
+      const prev = CAMO_TIERS[i - 1];
+      const globalMissing = WEAPONS.filter(w => !(progress[w.name] || {})[prev.key]);
+      if(globalMissing.length){
+        return { global: true, tier: prev, unlocks: CAMO_TIERS[i].label, missing: globalMissing };
+      }
+    }
     if(missing.length){
       return {
         tier: CAMO_TIERS[i],
@@ -141,8 +152,9 @@ function nextTierLabel(name){
   const progress = loadCamoProgress();
   const p = progress[name] || {};
   const next = CAMO_TIERS.find(t => !p[t.key]);
-  if(next === CAMO_TIERS[0] && !p[PREP_TICK.key]) return 'Next: Military & Special, then ' + next.label;
-  return next ? 'Next: ' + next.label : 'All tiers complete';
+  if(!next) return 'All tiers complete';
+  const hint = tierHint(next, weaponLookup(name));
+  return 'Next: ' + next.label + (hint ? ' (' + hint + ')' : '');
 }
 
 // Checks the next available tier for a weapon (used by the "Next Camo"
@@ -791,7 +803,12 @@ function initCamoChecklist(config){
       });
     }
     const classes = activeClass === 'All' ? WEAPON_CLASSES : [activeClass];
-    const rows = classes.map(cls => ({ cls: cls, b: classBlocker(cls, progress) })).filter(r => r.b);
+    let rows = classes.map(cls => ({ cls: cls, b: classBlocker(cls, progress) })).filter(r => r.b);
+    // Game-wide blockers (e.g. Harmonic Break waiting on Platinum anywhere)
+    // are the same for every class, so show them once, first.
+    const globalRow = rows.find(r => r.b.global);
+    rows = rows.filter(r => !r.b.global);
+    if(globalRow) rows.unshift({ cls: null, b: globalRow.b });
     if(!rows.length){
       box.innerHTML = '';
       box.style.display = 'none';
@@ -804,14 +821,14 @@ function initCamoChecklist(config){
     const toggle = rows.length > MAX_ROWS
       ? '<button class="blockers-toggle" type="button" data-toggle-blockers>' + (blockersExpanded ? 'Show less' : 'Show all ' + rows.length + ' classes') + '</button>'
       : '';
-    box.innerHTML = '<div class="blockers-title">' + (CLASS_GATED ? 'Holding things up' : 'Still to earn') + '</div>' +
+    box.innerHTML = '<div class="blockers-title">Holding things up</div>' +
       shown.map(r => {
         const names = r.b.missing.slice(0, MAX_NAMES).map(w =>
           '<button class="blocker-weapon" type="button" data-find="' + w.name + '">' + w.name + '</button>'
         ).join(', ');
         const more = r.b.missing.length > MAX_NAMES ? ' +' + (r.b.missing.length - MAX_NAMES) + ' more' : '';
         return '<div class="blocker-row">' +
-          '<span class="blocker-class">' + classLabel(r.cls) + '</span>' +
+          '<span class="blocker-class">' + (r.cls ? classLabel(r.cls) : 'All weapons') + '</span>' +
           '<span class="blocker-text">' + r.b.unlocks + ' needs <b style="color:' + r.b.tier.color + '">' + r.b.tier.label + '</b> on ' + names + more + '</span>' +
         '</div>';
       }).join('') + toggle;
@@ -824,19 +841,32 @@ function initCamoChecklist(config){
       const lockReason = tierLockReason(w, i, progress);
       const done = !!p[t.key];
       const locked = !!lockReason && !done;
-      const chipStyle = done ? 'background:' + t.color + ';border-color:transparent;' : (locked ? '' : 'border-color:' + t.color + ';');
-      return '<label class="tier-swatch'+(done ? ' tier-done' : '')+(locked ? ' tier-locked' : '')+'"'+(locked ? ' title="'+lockReason+'"' : '')+'>' +
+      const chipStyle = done ? 'background:' + (t.swatch || t.color) + ';border-color:transparent;' : (locked ? '' : 'border-color:' + t.color + ';');
+      const hint = tierHint(t, w);
+      const title = locked ? lockReason : (hint ? t.label + ': ' + hint : '');
+      return '<label class="tier-swatch'+(done ? ' tier-done' : '')+(locked ? ' tier-locked' : '')+'"'+(title ? ' title="'+title+'"' : '')+'>' +
         '<input class="sr-only" type="checkbox" data-name="'+w.name+'" data-tier="'+t.key+'"'+(done ? ' checked' : '')+(locked ? ' disabled' : '')+'>' +
         '<span class="swatch-chip'+(locked ? ' locked' : '')+'" style="'+chipStyle+'"></span>' +
         '<span class="swatch-label">'+t.label+'</span>' +
       '</label>';
     }).join('');
-    const prepImplied = !!p[CAMO_TIERS[0].key];
-    const prepDone = prepImplied || !!p[PREP_TICK.key];
-    const prepHtml = '<label class="prep-tick'+(prepDone ? ' done' : '')+'"'+(prepImplied ? ' title="Done: '+CAMO_TIERS[0].label+' is earned"' : '')+'>' +
-      '<input class="sr-only" type="checkbox" data-prep="'+w.name+'"'+(prepDone ? ' checked' : '')+(prepImplied ? ' disabled' : '')+'>' +
-      '<span class="prep-box"></span>' + PREP_TICK.label +
-    '</label>';
+    // Optional Pyroclast row: ticked in order like the main tiers, but not
+    // counted in any percentage or unlock rule.
+    const prestigeDone = PRESTIGE_CAMOS.filter(c => p[c.key]).length;
+    const prestigeHtml = '<div class="prestige-row">' +
+      '<span class="prestige-label">Prestige</span>' +
+      '<span class="prestige-chips">' +
+        PRESTIGE_CAMOS.map((c, i) => {
+          const done = !!p[c.key];
+          const locked = !done && i > 0 && !p[PRESTIGE_CAMOS[i - 1].key];
+          return '<label class="prestige-chip'+(done ? ' done' : '')+(locked ? ' locked' : '')+'" title="'+c.label+': '+c.req+(locked ? ' (needs '+PRESTIGE_CAMOS[i - 1].short+' first)' : '')+'" style="--chip:'+c.color+'">' +
+            '<input class="sr-only" type="checkbox" data-prestige="'+c.key+'" data-name="'+w.name+'"'+(done ? ' checked' : '')+(locked ? ' disabled' : '')+'>' +
+            '<span class="prestige-box"></span>' +
+          '</label>';
+        }).join('') +
+      '</span>' +
+      '<span class="prestige-count">'+prestigeDone+'/'+PRESTIGE_CAMOS.length+'</span>' +
+    '</div>';
     const cardColor = highestOwnTierColor(w.name, progress);
     const cardStyle = cardColor ? ' style="--card-border:' + cardColor + '"' : '';
     return '<div class="weapon-card'+(pinned ? ' pinned' : '')+'" data-name="'+w.name+'" data-class="'+w.class+'"'+cardStyle+'>' +
@@ -844,7 +874,7 @@ function initCamoChecklist(config){
         '<div class="weapon-name">'+w.name+'</div>' +
         '<div class="weapon-class">'+w.class+'</div>' +
         '<div class="swatch-row">'+swatchesHtml+'</div>' +
-        prepHtml +
+        prestigeHtml +
       '</div>' +
     '</div>';
   }
@@ -906,16 +936,21 @@ function initCamoChecklist(config){
         }
       });
     });
-    listEl.querySelectorAll('.tier-swatch, .prep-tick').forEach(label => {
+    listEl.querySelectorAll('.tier-swatch, .prestige-chip').forEach(label => {
       label.addEventListener('click', (e) => e.stopPropagation());
     });
-    listEl.querySelectorAll('input[data-prep]').forEach(box => {
+    listEl.querySelectorAll('input[data-prestige]').forEach(box => {
       box.addEventListener('change', () => {
-        const name = box.getAttribute('data-prep');
+        const name = box.getAttribute('data-name');
+        const key = box.getAttribute('data-prestige');
         if(!progress[name]) progress[name] = {};
-        progress[name][PREP_TICK.key] = box.checked;
+        progress[name][key] = box.checked;
+        // Same rule as the main tiers: unticking clears the ones after it.
+        if(!box.checked){
+          const idx = PRESTIGE_CAMOS.findIndex(c => c.key === key);
+          PRESTIGE_CAMOS.slice(idx + 1).forEach(c => { progress[name][c.key] = false; });
+        }
         saveCamoProgress(progress);
-        renderGrindList();
         render();
       });
     });
@@ -1022,7 +1057,7 @@ function renderMasteryPanel(containerId, progress){
   const lastTier = CAMO_TIERS[CAMO_TIERS.length - 1];
 
   function item(opts){
-    const chipStyle = opts.done ? 'background:' + opts.color + ';border-color:transparent;' : (opts.locked ? '' : 'border-color:' + opts.color + ';');
+    const chipStyle = opts.done ? 'background:' + (opts.swatch || opts.color) + ';border-color:transparent;' : (opts.locked ? '' : 'border-color:' + opts.color + ';');
     return '<label class="mastery-item tier-swatch' + (opts.done ? ' tier-done' : '') + (opts.locked ? ' tier-locked' : '') + '"' + (opts.title ? ' title="' + opts.title + '"' : '') + '>' +
       (opts.key ? '<input class="sr-only" type="checkbox" data-mastery="' + opts.key + '"' + (opts.done ? ' checked' : '') + (opts.locked ? ' disabled' : '') + '>' : '') +
       '<span class="swatch-chip' + (opts.locked ? ' locked' : '') + '" style="' + chipStyle + '"></span>' +
@@ -1034,6 +1069,7 @@ function renderMasteryPanel(containerId, progress){
   let html = item({
     label: DIVERGENCE.label,
     color: DIVERGENCE.color,
+    swatch: DIVERGENCE.swatch,
     done: hasDivergence,
     locked: false,
     req: lastTier.label + ' on all ' + WEAPONS.length + ' weapons &middot; ' + hbCount + '/' + WEAPONS.length,
@@ -1049,6 +1085,7 @@ function renderMasteryPanel(containerId, progress){
       key: c.key,
       label: c.label,
       color: c.color,
+      swatch: c.swatch,
       done: isDone,
       locked: !!lockReason && !isDone,
       title: lockReason,

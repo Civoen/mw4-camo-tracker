@@ -68,6 +68,7 @@
     cursor:pointer;
     margin-bottom:20px;
   }
+  .export-btn[hidden]{display:none;}
   .export-btn:hover{border-color:var(--hazard);color:var(--hazard);}
   .reset-btn{
     display:block;
@@ -222,6 +223,8 @@
 
   <button class="export-btn" id="exportBtn" type="button">Export</button>
 
+  <button class="export-btn" id="restoreBtn" type="button" hidden></button>
+
   <button class="reset-btn" id="resetBtn" type="button">Reset Progress</button>
   <div class="reset-disclaimer">Resets all weapon camos plus Multiplayer, Warzone <em>and</em> DMZ Mastery progress &mdash; not just the mode you're currently viewing.</div>
 
@@ -239,7 +242,7 @@ function collectBundle(){
   try{
     for(let i = 0; i < localStorage.length; i++){
       const key = localStorage.key(i);
-      if(key && key.indexOf(MW4CAMO_PREFIX) === 0 && key !== 'mw4camo-sync-last'){
+      if(key && key.indexOf(MW4CAMO_PREFIX) === 0 && key !== 'mw4camo-sync-last' && key !== 'mw4camo-restore-point'){
         bundle[key] = localStorage.getItem(key);
       }
     }
@@ -268,26 +271,33 @@ document.getElementById('exportBtn').addEventListener('click', () => {
   showStatus('Progress file downloaded.', 'success');
 });
 
-// Re-applies the "each weapon's camos unlock in order" rule to imported
-// data (Gold -> Platinum -> Harmonic Break). A hand-edited file could
-// otherwise restore an impossible state, like a weapon holding its second
-// mastery camo without the first.
-function sanitizeCamoProgress(progress, tiers){
-  if(!progress || typeof progress !== 'object') return { progress: progress, fixedCount: 0 };
-  let fixedCount = 0;
-  Object.keys(progress).forEach(name => {
-    const p = progress[name] || {};
-    let broken = false;
-    tiers.forEach(t => {
-      if(!p[t.key]) broken = true;
-      else if(broken){ p[t.key] = false; fixedCount++; }
-    });
-  });
-  return { progress: progress, fixedCount: fixedCount };
-}
-
 // Keys holding camo progress, which only make sense for the data version
 // they were saved under (see DATA_VERSION in data.js).
+function isCompatibleVersion(v){
+  return v !== undefined && v !== null && Number(v) >= 3;
+}
+
+// ---- Restore point ----
+// Loading a file or a sync code replaces this device's progress, so a copy
+// of what was there is kept first and can be put back with one click.
+const RESTORE_KEY = 'mw4camo-restore-point';
+const RESTORE_DATA_KEYS = ['mw4camo-progress', 'mw4camo-mastery', 'mw4camo-grindlist', 'mw4camo-recent', 'mw4camo-celebrated'];
+function saveRestorePoint(reason){
+  const data = {};
+  RESTORE_DATA_KEYS.forEach(k => { const v = localStorage.getItem(k); if(v !== null) data[k] = v; });
+  if(!Object.keys(data).length) return;
+  try{ localStorage.setItem(RESTORE_KEY, JSON.stringify({ ts: Date.now(), reason: reason, data: data })); }catch(e){}
+  renderRestoreButton();
+}
+function renderRestoreButton(){
+  const btn = document.getElementById('restoreBtn');
+  if(!btn) return;
+  let rp = null;
+  try{ rp = JSON.parse(localStorage.getItem(RESTORE_KEY) || 'null'); }catch(e){}
+  btn.hidden = !rp;
+  if(rp) btn.textContent = 'Put back progress from before ' + rp.reason;
+}
+
 function isProgressDataKey(k){
   return /^mw4camo-(progress|grindlist|recent|mastery|celebrated)(-|$)/.test(k);
 }
@@ -312,38 +322,29 @@ function handleImportFile(file){
       showStatus('No recognizable progress data found in that file.', 'error');
       return;
     }
-    // Backups made before launch data existed hold Black Ops 6 weapon names
-    // and placeholder tiers. Restore everything else from them (e.g. Mapfam),
-    // but skip their camo progress rather than writing back invalid data.
+    // Backups made before launch (data version 1-2) hold placeholder
+    // weapons and camos. Restore everything else from them (e.g. Mapfam), but
+    // skip their camo progress. Anything from launch onwards (v3+) is
+    // restored as-is: nothing in it is ever "corrected" or removed.
     let skippedOldProgress = false;
-    if(data[MW4CAMO_PREFIX + 'data-version'] !== DATA_VERSION){
+    if(!isCompatibleVersion(data[MW4CAMO_PREFIX + 'data-version'])){
       const before = keys.length;
       keys = keys.filter(k => !isProgressDataKey(k) && k !== MW4CAMO_PREFIX + 'data-version');
       skippedOldProgress = keys.length !== before;
     }
-    let fixedCount = 0;
-    const progressKey = MW4CAMO_PREFIX + 'progress';
-    if(data[progressKey] && keys.includes(progressKey)){
-      try{
-        const parsed = JSON.parse(data[progressKey]);
-        const result = sanitizeCamoProgress(parsed, CAMO_TIERS);
-        fixedCount += result.fixedCount;
-        data[progressKey] = JSON.stringify(result.progress);
-      }catch(err){
-        // If it doesn't parse as expected, just import it as-is rather than blocking the whole restore.
-      }
-    }
+    keys = keys.filter(k => k !== MW4CAMO_PREFIX + 'data-version' && k !== RESTORE_KEY && k !== 'mw4camo-sync-last');
+    saveRestorePoint('importing ' + file.name);
     try{
       keys.forEach(k => localStorage.setItem(k, data[k]));
+      migrateProgressData();
     }catch(err){
       showStatus('Could not save the imported data to this browser.', 'error');
       return;
     }
     document.getElementById('fileName').textContent = file.name;
     if(typeof refreshSyncCode === 'function') refreshSyncCode();
-    const fixedNote = fixedCount ? (' ' + fixedCount + ' invalid camo' + (fixedCount === 1 ? '' : 's') + ' (earned without the camo before it) were automatically corrected.') : '';
     const oldNote = skippedOldProgress ? ' Camo progress in this backup uses an older camo layout, so it wasn\u2019t restored.' : '';
-    showStatus('Imported \u2014 ' + keys.length + ' item(s) restored.' + oldNote + fixedNote, keys.length ? 'success' : 'error');
+    showStatus('Imported \u2014 ' + keys.length + ' item(s) restored.' + oldNote, keys.length ? 'success' : 'error');
   };
   reader.readAsText(file);
 }
@@ -385,6 +386,7 @@ resetBtn.addEventListener('click', () => {
   }
 
   clearTimeout(resetTimeout);
+  saveRestorePoint('reset');
   try{
     RESET_KEYS.forEach(k => localStorage.removeItem(k));
   }catch(e){}
@@ -532,18 +534,13 @@ syncIn.addEventListener('keydown', (e) => { if(e.key === 'Enter') syncLoadBtn.cl
 
 function applySnapshot(snap){
   const data = snap.data || {};
-  if(data['mw4camo-progress']){
-    try{
-      const fixed = sanitizeCamoProgress(JSON.parse(data['mw4camo-progress']), CAMO_TIERS);
-      data['mw4camo-progress'] = JSON.stringify(fixed.progress);
-    }catch(e){}
-  }
+  saveRestorePoint('loading ' + snap.code);
   SYNC_KEYS.forEach(k => {
     if(k === 'mw4camo-data-version') return;
     if(typeof data[k] === 'string') localStorage.setItem(k, data[k]);
     else localStorage.removeItem(k);
   });
-  localStorage.setItem('mw4camo-data-version', DATA_VERSION);
+  migrateProgressData();
 }
 
 syncLoadBtn.addEventListener('click', () => {
@@ -571,8 +568,8 @@ syncLoadBtn.addEventListener('click', () => {
     .then(res => {
       if(!res.ok) throw new Error(res.body.error || 'Could not load that code.');
       const snap = res.body;
-      if((snap.data || {})['mw4camo-data-version'] !== DATA_VERSION){
-        throw new Error(snap.code + ' was made with an older camo layout, so it can’t be loaded. Create a new code on the other device.');
+      if(!isCompatibleVersion((snap.data || {})['mw4camo-data-version'])){
+        throw new Error(snap.code + ' was made before launch, so its camos don’t match MW4. Create a new code on the other device.');
       }
       let camoCount = 0;
       try{
@@ -591,6 +588,21 @@ syncLoadBtn.addEventListener('click', () => {
       showSyncStatus(err.message && err.message !== 'Failed to fetch' ? err.message : 'Couldn’t reach the server. Check your connection and try again.', 'error');
     });
 });
+
+document.getElementById('restoreBtn').addEventListener('click', () => {
+  let rp = null;
+  try{ rp = JSON.parse(localStorage.getItem(RESTORE_KEY) || 'null'); }catch(e){}
+  if(!rp) return;
+  RESTORE_DATA_KEYS.forEach(k => {
+    if(typeof rp.data[k] === 'string') localStorage.setItem(k, rp.data[k]);
+    else localStorage.removeItem(k);
+  });
+  localStorage.removeItem(RESTORE_KEY);
+  renderRestoreButton();
+  if(typeof refreshSyncCode === 'function') refreshSyncCode();
+  showStatus('Progress put back to how it was before the last ' + (rp.reason.indexOf('reset') === 0 ? 'reset' : 'load') + '.', 'success');
+});
+renderRestoreButton();
 </script>
 </body>
 </html>
