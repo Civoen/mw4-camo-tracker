@@ -8,7 +8,7 @@
 //   - loadRecentLog() is the ONLY source with timestamps, so it drives
 //     everything date/time-based (streaks, the chart, mastery duration).
 //     It's capped at 200 entries, comfortably above the 99 weapon camos
-//     that can ever be logged (33 weapons x 3 tiers), so it holds complete history
+//     that can ever be logged (weapons x 3 tiers, ~100), so it holds complete history
 //     unless it's been manually cleared. One gap worth knowing: the
 //     Manage Data "100% test" button and individual Recent removals don't
 //     go through the normal log path, so time-based stats reflect

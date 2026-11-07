@@ -48,6 +48,17 @@ function celebrateNewMilestones(tileEls){
   try{ localStorage.setItem(CELEBRATED_KEY, JSON.stringify(next)); }catch(e){}
 }
 
+// ---- Escaping ----
+// Recent history and the grind list can come from another device (sync
+// code / backup file), so anything from storage is escaped before it's put
+// into the page.
+function escapeHtml(v){
+  return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+}
+function safeColor(v){
+  return /^#[0-9a-fA-F]{3,8}$/.test(String(v || '')) ? v : 'var(--line)';
+}
+
 // ---- Shared progress helpers ----
 function loadCamoProgress(){
   try{
@@ -111,38 +122,44 @@ function tierLockReason(weapon, tierIndex, progress){
   const prev = CAMO_TIERS[tierIndex - 1];
   if(!(progress[weapon.name] || {})[prev.key]) return 'Needs ' + prev.label + ' first';
   if(!tier.gate) return '';
-  const pool = tier.gate === 'all' ? WEAPONS : WEAPONS.filter(w => w.class === weapon.class);
+  if(tier.gate === 'count'){
+    const done = WEAPONS.filter(w => (progress[w.name] || {})[prev.key]).length;
+    return done < tier.count ? 'Needs ' + prev.label + ' on ' + tier.count + ' weapons (' + done + '/' + tier.count + ')' : '';
+  }
+  const pool = WEAPONS.filter(w => w.class === weapon.class);
+  const need = classGateCount(weapon.class);
   const done = pool.filter(w => (progress[w.name] || {})[prev.key]).length;
-  if(done < pool.length){
-    const scope = tier.gate === 'all' ? 'all weapons' : 'every ' + classLabel(weapon.class).replace(/s$/, '');
-    return 'Needs ' + prev.label + ' on ' + scope + ' (' + done + '/' + pool.length + ')';
+  if(done < need){
+    return 'Needs ' + prev.label + ' on ' + need + ' ' + (need === 1 ? classLabel(weapon.class).replace(/s$/, '') : classLabel(weapon.class)) + ' (' + done + '/' + need + ')';
   }
   return '';
 }
 
-// What's holding a class back: the lowest tier not yet earned on every
-// weapon in it, and which weapons are missing it. With class gating that
-// tier is what stops the next one unlocking anywhere in the class.
-// Returns null when the whole class is complete.
+// What's actually stopping the next unlock for a class, following the
+// game's rules in order. Weapons that are behind but not needed for any
+// count aren't listed (e.g. the 6th SMG when only 5 Golds are required).
+// Returns null once nothing is gated any more.
+//   { tier, unlocks, missing: [weapons without `tier`], needMore, global }
 function classBlocker(cls, progress){
-  const weapons = WEAPONS.filter(w => w.class === cls);
+  const has = (w, key) => !!(progress[w.name] || {})[key];
   for(let i = 0; i < CAMO_TIERS.length; i++){
-    const missing = weapons.filter(w => !(progress[w.name] || {})[CAMO_TIERS[i].key]);
-    // A tier gated on ALL weapons can be held up by other classes: report
-    // that (once, as a game-wide row) rather than this class's own gaps.
-    if(missing.length && i > 0 && CAMO_TIERS[i].gate === 'all'){
-      const prev = CAMO_TIERS[i - 1];
-      const globalMissing = WEAPONS.filter(w => !(progress[w.name] || {})[prev.key]);
-      if(globalMissing.length){
-        return { global: true, tier: prev, unlocks: CAMO_TIERS[i].label, missing: globalMissing };
+    const tier = CAMO_TIERS[i];
+    const next = CAMO_TIERS[i + 1];
+    const gate = next ? next.gate : 'count';
+    const count = next ? next.count : DIVERGENCE.count;
+    const unlocks = next ? next.label : DIVERGENCE.label;
+    if(gate === 'class'){
+      const weapons = WEAPONS.filter(w => w.class === cls);
+      const need = classGateCount(cls);
+      const done = weapons.filter(w => has(w, tier.key)).length;
+      if(done < need){
+        return { tier: tier, unlocks: unlocks, missing: weapons.filter(w => !has(w, tier.key)), needMore: need - done };
       }
-    }
-    if(missing.length){
-      return {
-        tier: CAMO_TIERS[i],
-        unlocks: i < CAMO_TIERS.length - 1 ? CAMO_TIERS[i + 1].label : DIVERGENCE.label,
-        missing: missing
-      };
+    }else if(gate === 'count'){
+      const done = WEAPONS.filter(w => has(w, tier.key)).length;
+      if(done < count){
+        return { global: true, tier: tier, unlocks: unlocks, missing: WEAPONS.filter(w => !has(w, tier.key)), needMore: count - done };
+      }
     }
   }
   return null;
@@ -268,13 +285,13 @@ function renderRecentRows(containerId, log){
   if(!el) return;
   el.innerHTML = log.length
     ? log.map((entry, i) =>
-        '<div class="recent-row" data-index="'+i+'" data-class="'+entry.class+'" role="button" tabindex="0">' +
-          '<span class="recent-dot" style="background:'+(entry.color || (CAMO_TIERS.find(t => t.key === entry.tierKey) || {}).color)+'"></span>' +
+        '<div class="recent-row" data-index="'+i+'" data-class="'+escapeHtml(entry.class)+'" role="button" tabindex="0">' +
+          '<span class="recent-dot" style="background:'+safeColor(entry.color || (CAMO_TIERS.find(t => t.key === entry.tierKey) || {}).color)+'"></span>' +
           '<span class="recent-main">' +
-            '<span class="recent-weapon">'+entry.name+'</span>' +
-            '<span class="recent-class">'+entry.class+'</span>' +
+            '<span class="recent-weapon">'+escapeHtml(entry.name)+'</span>' +
+            '<span class="recent-class">'+escapeHtml(entry.class)+'</span>' +
           '</span>' +
-          '<span class="recent-tier">'+entry.tierLabel+'</span>' +
+          '<span class="recent-tier">'+escapeHtml(entry.tierLabel)+'</span>' +
           '<span class="recent-time">'+formatRelativeTime(entry.ts)+'</span>' +
           '<button class="recent-remove" data-index="'+i+'" type="button" aria-label="Remove entry">&times;</button>' +
         '</div>'
@@ -383,14 +400,15 @@ function renderGrindList(){
         const unlocked = nextIndex !== -1 && tierUnlocked(w, nextIndex, progress);
         const nextBtnHtml = mastered
           ? ''
-          : '<button class="grind-item-next" data-name="'+name+'" type="button"'+(unlocked ? '' : ' disabled title="'+tierLockReason(w, nextIndex, progress)+'"')+'>Next Camo</button>';
-        return '<div class="grind-item" data-name="'+name+'">' +
-          '<span><span class="grind-item-name">'+w.name+'</span><br>' +
-          '<span class="grind-item-sub">'+w.class+' &middot; '+nextTierLabel(name)+'</span></span>' +
+          : '<button class="grind-item-next" data-name="'+escapeHtml(name)+'" type="button"'+(unlocked ? '' : ' disabled title="'+escapeHtml(tierLockReason(w, nextIndex, progress))+'"')+'>Next Camo</button>';
+        const safeName = escapeHtml(name);
+        return '<div class="grind-item" data-name="'+safeName+'">' +
+          '<span><span class="grind-item-name">'+escapeHtml(w.name)+'</span><br>' +
+          '<span class="grind-item-sub">'+escapeHtml(w.class)+' &middot; '+escapeHtml(nextTierLabel(name))+'</span></span>' +
           '<span class="grind-item-actions">' +
             '<a class="grind-item-view" href="camos.html?class='+encodeURIComponent(w.class)+'">View Class</a>' +
             nextBtnHtml +
-            '<button class="grind-item-remove" data-name="'+name+'" type="button">Remove</button>' +
+            '<button class="grind-item-remove" data-name="'+safeName+'" type="button">Remove</button>' +
           '</span>' +
         '</div>';
       }).join('')
@@ -829,7 +847,8 @@ function initCamoChecklist(config){
         const more = r.b.missing.length > MAX_NAMES ? ' +' + (r.b.missing.length - MAX_NAMES) + ' more' : '';
         return '<div class="blocker-row">' +
           '<span class="blocker-class">' + (r.cls ? classLabel(r.cls) : 'All weapons') + '</span>' +
-          '<span class="blocker-text">' + r.b.unlocks + ' needs <b style="color:' + r.b.tier.color + '">' + r.b.tier.label + '</b> on ' + names + more + '</span>' +
+          '<span class="blocker-text">' + r.b.unlocks + ' needs <b style="color:' + r.b.tier.color + '">' + r.b.tier.label + '</b> on ' +
+            (r.b.needMore < r.b.missing.length ? r.b.needMore + ' more of ' : '') + names + more + '</span>' +
         '</div>';
       }).join('') + toggle;
   }
@@ -943,6 +962,7 @@ function initCamoChecklist(config){
       box.addEventListener('change', () => {
         const name = box.getAttribute('data-name');
         const key = box.getAttribute('data-prestige');
+        const before = Object.assign({}, progress[name] || {});
         if(!progress[name]) progress[name] = {};
         progress[name][key] = box.checked;
         // Same rule as the main tiers: unticking clears the ones after it.
@@ -952,6 +972,21 @@ function initCamoChecklist(config){
         }
         saveCamoProgress(progress);
         render();
+        if(!box.checked){
+          const lost = PRESTIGE_CAMOS.filter(c => before[c.key]).map(c => c.label);
+          if(lost.length){
+            showUndoToast(
+              (lost.length === 1 ? 'Removed ' + lost[0] : 'Removed ' + lost.length + ' Pyroclast camos') + ' from ' + name,
+              () => {},
+              () => {
+                progress = loadCamoProgress();
+                progress[name] = before;
+                saveCamoProgress(progress);
+                render();
+              }
+            );
+          }
+        }
       });
     });
 
@@ -1053,7 +1088,7 @@ function renderMasteryPanel(containerId, progress){
   const all = loadMastery();
   const done = all[modeKey] || {};
   const hbCount = divergenceCount(progress);
-  const hasDivergence = hbCount === WEAPONS.length;
+  const hasDivergence = hbCount >= DIVERGENCE.count;
   const lastTier = CAMO_TIERS[CAMO_TIERS.length - 1];
 
   function item(opts){
@@ -1072,8 +1107,8 @@ function renderMasteryPanel(containerId, progress){
     swatch: DIVERGENCE.swatch,
     done: hasDivergence,
     locked: false,
-    req: lastTier.label + ' on all ' + WEAPONS.length + ' weapons &middot; ' + hbCount + '/' + WEAPONS.length,
-    title: 'Ticks itself once every weapon has ' + lastTier.label
+    req: lastTier.label + ' on ' + DIVERGENCE.count + ' weapons &middot; ' + Math.min(hbCount, DIVERGENCE.count) + '/' + DIVERGENCE.count,
+    title: 'Ticks itself once ' + DIVERGENCE.count + ' weapons have ' + lastTier.label
   });
   camos.forEach((c, i) => {
     const isDone = !!done[c.key];

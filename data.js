@@ -1,8 +1,10 @@
 // ============================================================
 // MW4 WEAPON + CAMO DATA
 // ============================================================
-// Weapons: Activision's official launch list, all 33 (callofduty.com blog
-// "Ready for Launch", Oct 2026). Adding weapons never affects progress.
+// Weapons: Activision's official launch list (33, callofduty.com blog
+// "Ready for Launch", Oct 2026) plus Season 1 additions (`season: 1`).
+// Adding weapons never affects progress or unlock counts (see
+// LAUNCH_CLASS_COUNTS below).
 
 const WEAPONS = [
   // Assault Rifles
@@ -14,12 +16,14 @@ const WEAPONS = [
   { name: 'Oden', class: 'Assault Rifle' },
   { name: 'Axion', class: 'Assault Rifle' },
   { name: 'Cronen Squall', class: 'Assault Rifle' },
+  { name: 'Cronen Osprey', class: 'Assault Rifle', season: 1 },
   // SMGs
   { name: 'ISO Nightshade', class: 'SMG' },
   { name: 'VEL 46', class: 'SMG' },
   { name: 'Wz.55 Striga', class: 'SMG' },
   { name: 'PPSh-41', class: 'SMG' },
   { name: 'X-58 Nyx', class: 'SMG' },
+  { name: 'CSG-35', class: 'SMG', season: 1 },
   // Shotguns
   { name: 'Rezi 12', class: 'Shotgun' },
   { name: 'Warlord', class: 'Shotgun' },
@@ -50,6 +54,27 @@ const WEAPONS = [
 ];
 
 const WEAPON_CLASSES = [...new Set(WEAPONS.map(w => w.class))];
+
+// How many weapons each class had at launch. Platinum needs Gold on THIS
+// many weapons in the class, not on every one: weapons added in later
+// seasons don't raise the bar (confirmed in-game: 5 of the 6 SMGs).
+// A class that didn't exist at launch needs every weapon in it.
+const LAUNCH_CLASS_COUNTS = {
+  'Assault Rifle': 8,
+  'SMG': 5,
+  'Shotgun': 2,
+  'LMG': 3,
+  'Marksman Rifle': 3,
+  'Sniper Rifle': 3,
+  'Pistol': 4,
+  'Launcher': 4,
+  'Melee': 1
+};
+
+function classGateCount(cls){
+  const size = WEAPONS.filter(w => w.class === cls).length;
+  return Math.min(LAUNCH_CLASS_COUNTS[cls] || size, size);
+}
 
 // Display label (usually plural) shown on the homepage class tiles.
 // Falls back to "<class>s" for any class not listed here, so adding a new
@@ -82,7 +107,7 @@ function classLabel(cls){
 // `comingSoon` marks a mode whose mastery camos can't be earned yet.
 const MODES = [
   { key: 'mp', label: 'Multiplayer', accent: 'var(--gold)' },
-  { key: 'wz', label: 'Warzone', accent: 'var(--gold)', comingSoon: 'Warzone joins MW4 in Season 1 (Nov 6). Its Mastery camos unlock then.' },
+  { key: 'wz', label: 'Warzone', accent: 'var(--gold)' },
   { key: 'dmz', label: 'DMZ', accent: 'var(--gold)' }
 ];
 
@@ -129,8 +154,12 @@ function applyModeAccent(){
 // Prestige" post (Oct 2026). `gate` is what the tier needs on OTHER weapons,
 // on top of the tier before it on this weapon:
 //   Gold           - this weapon's 3 Special (weapon-specific) challenges
-//   Platinum       - Gold on every weapon in the same class      ('class')
-//   Harmonic Break - Platinum on all weapons in the game          ('all')
+//   Platinum       - Gold on N weapons in the same class, where N is
+//                    the class's size at launch                   ('class')
+//   Harmonic Break - Platinum on 33 weapons (any 33)              ('count')
+// The game words the Harmonic Break and Divergence rules as counts
+// ("Complete 33 Platinum Camo Challenges"), so they're counts here too:
+// if Season 1 adds weapons, the site won't demand more than the game does.
 // `hint` is the challenge shown when hovering a tier, per mode.
 //
 // `color` is the accent used for bars, outlines and tile borders; `swatch`
@@ -141,7 +170,7 @@ const CAMO_TIERS = [
     hint: { mp: '15 player kills in a single match', dmz: '100 kills in a single DMZ match' } },
   { key: 'platinum', label: 'Platinum', color: '#b8bbbe', gate: 'class',
     swatch: 'linear-gradient(135deg, #d4d6d8 0%, #9c9fa2 55%, #75787b 100%)', hint: null },
-  { key: 'harmonic-break', label: 'Harmonic Break', color: '#e8435a', gate: 'all',
+  { key: 'harmonic-break', label: 'Harmonic Break', color: '#e8435a', gate: 'count', count: 33,
     swatch: 'linear-gradient(115deg, #34343a 0 32%, #e8435a 32% 48%, #ff8a98 48% 51%, #e8435a 51% 68%, #34343a 68%)', hint: null }
 ];
 
@@ -186,14 +215,14 @@ function tierHint(tier, weapon){
 // ============================================================
 // DIVERGENCE + MASTERY CAMOS (account-wide)
 // ============================================================
-// Divergence unlocks once every weapon has Harmonic Break. After that each
+// Divergence unlocks once 33 weapons have Harmonic Break ("Complete 33
+// Harmonic Break Camo Challenges"). After that each
 // mode has three Mastery camos, earned in order through long challenges
 // that count kills with any weapon (so they're tracked once, not per gun).
 // `color` is the accent (outline, Recent dot); `swatch` is the filled look
 // once earned, matched to the in-game camo previews.
-// `req` is shown under each camo (official for Multiplayer and DMZ);
-// null = not published yet (Warzone, until Season 1).
-const DIVERGENCE = { key: 'divergence', label: 'Divergence', color: '#4fb3e8',
+// `req` is shown under each camo (all official); null = not published yet.
+const DIVERGENCE = { key: 'divergence', label: 'Divergence', color: '#4fb3e8', count: 33,
   swatch: 'radial-gradient(circle, #3fa9e0 0 2px, transparent 2.5px) 0 0/14px 11px, radial-gradient(circle, #f2c230 0 1.5px, transparent 2px) 5px 4px/17px 13px, radial-gradient(circle, #5cc860 0 2px, transparent 2.5px) 9px 7px/21px 15px, radial-gradient(circle, #e0453a 0 1.5px, transparent 2px) 3px 9px/19px 12px, radial-gradient(circle, #3a6fd8 0 1.5px, transparent 2px) 11px 2px/23px 17px, #121316' };
 
 const MASTERY_CAMOS = {
@@ -203,9 +232,9 @@ const MASTERY_CAMOS = {
     { key: 'orion-reforged', label: 'Orion Reforged', color: '#d0452e', swatch: 'radial-gradient(circle at 65% 55%, #e0603a 0%, #8a1d24 30%, #2a0a10 65%, #0d0507 100%)', req: '5 kills without dying, 500 times' }
   ],
   wz: [
-    { key: 'parallax', label: 'Parallax', color: '#e8833a', req: null },
-    { key: 'damascus-reforged', label: 'Damascus Reforged', color: '#9aa0a6', req: null },
-    { key: 'empyros', label: 'Empyros', color: '#ffffff', req: null }
+    { key: 'parallax', label: 'Parallax', color: '#e8833a', req: '5 kills in a match, 300 times' },
+    { key: 'damascus-reforged', label: 'Damascus Reforged', color: '#9aa0a6', req: '2 kills without plating, 200 times' },
+    { key: 'empyros', label: 'Empyros', color: '#ffffff', req: 'Top 5 with at least 6 kills, 75 times' }
   ],
   dmz: [
     { key: 'chiral', label: 'Chiral', color: '#c0182a', swatch: 'radial-gradient(circle at 40% 40%, #d0202f 0%, #7a0b14 45%, #2e0407 100%)', req: '2,500 Tier 3+ enemy kills' },
@@ -269,10 +298,14 @@ function migrateProgressData(){
 (function(){
   try{
     const stored = localStorage.getItem('mw4camo-data-version');
-    // The one historical reset: data from before launch (no version, or v1-2)
+    // The one historical reset: data from before launch (v1-2)
     // used placeholder weapons/camos that don't exist in MW4. It's archived
     // rather than deleted. Nothing saved since launch (v3+) is ever touched.
-    if(stored !== null && Number(stored) < 3){
+    // The very first version saved no version marker at all, so "no marker
+    // but progress already stored" also means pre-launch data. (Every visit
+    // since launch writes the marker first thing, below.)
+    const hasOldData = stored === null && ['mw4camo-progress', 'mw4camo-grindlist', 'mw4camo-recent'].some(k => localStorage.getItem(k) !== null);
+    if(hasOldData || (stored !== null && Number(stored) < 3)){
       const archive = {};
       ['mw4camo-progress', 'mw4camo-grindlist', 'mw4camo-recent', 'mw4camo-celebrated', 'mw4camo-mastery'].forEach(base => {
         [base].concat(MODES.map(m => base + '-' + m.key)).forEach(k => {
